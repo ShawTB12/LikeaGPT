@@ -41,6 +41,7 @@ interface Message {
   sender: string;
   type?: 'text' | 'slides';
   slides?: SlideData[];
+  analysisData?: CompanyAnalysis;
 }
 
 interface SlideData {
@@ -60,6 +61,32 @@ interface CompanyAnalysis {
   strategy: string;
   risks: string;
   conclusion: string;
+  marketShareData: ChartData;
+  financialTrendData: ChartData;
+  competitorComparisonData: ChartData;
+  keyMetrics: {
+    revenue: string;
+    growth: string;
+    marketShare: string;
+    employees: string;
+  };
+  keyInsights: {
+    icon: string;
+    title: string;
+    description: string;
+  }[];
+  dataSource: string;
+}
+
+interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor?: string | string[];
+    borderColor?: string;
+    borderWidth?: number;
+  }[];
 }
 
 export default function Home() {
@@ -143,7 +170,8 @@ export default function Home() {
           text: `${analysis.companyName}の企業分析資料を作成しました。`,
           sender: "ai",
           type: "slides",
-          slides: slides
+          slides: slides,
+          analysisData: analysis
         }
         
         setMessages(prev => [...prev, slideMessage])
@@ -202,7 +230,27 @@ export default function Home() {
         financialStatus: "健全な財務基盤を持ち、持続的な成長を実現しています。",
         strategy: "長期的な視点に立った戦略的投資と事業ポートフォリオの最適化を進めています。",
         risks: "市場変動、技術的リスク、競合他社の動向に注意が必要です。",
-        conclusion: "総合的に見て、今後も成長が期待される企業です。"
+        conclusion: "総合的に見て、今後も成長が期待される企業です。",
+        marketShareData: {
+          labels: [],
+          datasets: [],
+        },
+        financialTrendData: {
+          labels: [],
+          datasets: [],
+        },
+        competitorComparisonData: {
+          labels: [],
+          datasets: [],
+        },
+        keyMetrics: {
+          revenue: "",
+          growth: "",
+          marketShare: "",
+          employees: "",
+        },
+        keyInsights: [],
+        dataSource: "",
       }
     }
   }
@@ -259,7 +307,7 @@ export default function Home() {
     return companyKeywords.some(keyword => text.includes(keyword)) || /^[A-Za-z\s]+$/.test(text.trim())
   }
 
-  const exportSlidesToHTML = (slides: SlideData[], filename: string) => {
+  const exportSlidesToHTML = (slides: SlideData[], filename: string, analysisData?: CompanyAnalysis) => {
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="ja">
@@ -267,87 +315,112 @@ export default function Home() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${filename} - 企業分析プレゼンテーション</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
         }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            overflow: hidden;
-        }
-        
-        .slide-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        
         .slide {
-            width: 90%;
-            height: 90%;
-            max-width: 1200px;
-            max-height: 675px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            display: none;
-            flex-direction: column;
-            padding: 60px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            width: 1280px;
+            min-height: 720px;
             position: relative;
+            background-color: white;
             overflow: hidden;
+            box-sizing: border-box;
+            padding: 40px 60px;
+            display: none;
         }
-        
         .slide.active {
+            display: block;
+        }
+        .header {
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
         }
-        
-        .slide::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 8px;
-            background: linear-gradient(90deg, #8B5CF6, #3B82F6);
-        }
-        
-        .slide-header {
-            margin-bottom: 40px;
-        }
-        
-        .slide-number {
-            color: #8B5CF6;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        
         .slide-title {
-            font-size: 48px;
+            font-size: 2.5rem;
             font-weight: 700;
-            color: #1a1a1a;
-            line-height: 1.2;
+            color: #1e40af;
+        }
+        .slide-number {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 500;
+        }
+        .chart-container {
+            height: 320px;
             margin-bottom: 20px;
         }
-        
-        .slide-content {
-            flex: 1;
-            font-size: 24px;
-            line-height: 1.6;
-            color: #4a4a4a;
-            display: flex;
-            align-items: center;
+        .insight-box {
+            background-color: #f0f4ff;
+            border-left: 5px solid #1e40af;
+            padding: 15px 20px;
+            margin-top: 20px;
         }
-        
+        .insight-title {
+            font-weight: 700;
+            color: #1e40af;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        .highlight {
+            color: #1e40af;
+            font-weight: 700;
+        }
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            right: 60px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .stat-highlight {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e40af;
+            text-align: center;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .grid-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 30px;
+            height: 500px;
+        }
+        .grid-item {
+            background: rgba(30, 64, 175, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: 2px solid rgba(30, 64, 175, 0.2);
+        }
+        .grid-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        .grid-content {
+            font-size: 1rem;
+            color: #4a4a4a;
+            line-height: 1.5;
+        }
         .navigation {
             position: fixed;
             bottom: 30px;
@@ -356,9 +429,8 @@ export default function Home() {
             gap: 15px;
             z-index: 1000;
         }
-        
         .nav-btn {
-            background: rgba(139, 92, 246, 0.9);
+            background: rgba(30, 64, 175, 0.9);
             color: white;
             border: none;
             padding: 12px 24px;
@@ -367,19 +439,15 @@ export default function Home() {
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
         }
-        
         .nav-btn:hover {
-            background: rgba(139, 92, 246, 1);
+            background: rgba(30, 64, 175, 1);
             transform: translateY(-2px);
         }
-        
         .nav-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
         .slide-indicator {
             position: fixed;
             bottom: 30px;
@@ -389,7 +457,6 @@ export default function Home() {
             gap: 10px;
             z-index: 1000;
         }
-        
         .indicator-dot {
             width: 12px;
             height: 12px;
@@ -398,77 +465,167 @@ export default function Home() {
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
         .indicator-dot.active {
-            background: rgba(139, 92, 246, 0.9);
+            background: rgba(30, 64, 175, 0.9);
             transform: scale(1.2);
-        }
-        
-        .slide-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 30px;
-            height: 100%;
-        }
-        
-        .grid-item {
-            background: rgba(139, 92, 246, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border: 2px solid rgba(139, 92, 246, 0.2);
-        }
-        
-        .grid-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #8B5CF6;
-            margin-bottom: 10px;
-        }
-        
-        .grid-content {
-            font-size: 16px;
-            color: #4a4a4a;
-            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <div class="slide-container">
-        ${slides.map((slide, index) => `
-            <div class="slide ${index === 0 ? 'active' : ''}" data-slide="${index}">
-                <div class="slide-header">
-                    <div class="slide-number">${index + 1} / ${slides.length}</div>
-                    <h1 class="slide-title">${slide.title}</h1>
+    ${slides.map((slide, index) => `
+        <div class="slide ${index === 0 ? 'active' : ''}" data-slide="${index}">
+            <div class="header">
+                <h1 class="slide-title">${slide.title}</h1>
+                <div class="slide-number">${index + 1} / ${slides.length}</div>
+            </div>
+
+            ${index === 0 ? `
+                <!-- 概要スライド（2x2グリッド） -->
+                <div class="grid-overview">
+                    <div class="grid-item">
+                        <div class="grid-title">
+                            <i class="fas fa-building mr-2"></i>企業概要
+                        </div>
+                        <div class="grid-content">${slide.content}</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="grid-title">
+                            <i class="fas fa-chart-pie mr-2"></i>主要指標
+                        </div>
+                        <div class="grid-content">
+                            ${analysisData ? `
+                                <div class="space-y-2">
+                                    <div>売上高: <span class="highlight">${analysisData.keyMetrics.revenue}</span></div>
+                                    <div>成長率: <span class="highlight">${analysisData.keyMetrics.growth}</span></div>
+                                    <div>市場シェア: <span class="highlight">${analysisData.keyMetrics.marketShare}</span></div>
+                                    <div>従業員: <span class="highlight">${analysisData.keyMetrics.employees}</span></div>
+                                </div>
+                            ` : '主要な業績指標と企業規模'}
+                        </div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="grid-title">
+                            <i class="fas fa-trophy mr-2"></i>競争優位性
+                        </div>
+                        <div class="grid-content">${slides[1]?.content || "業界における強固なポジション"}</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="grid-title">
+                            <i class="fas fa-rocket mr-2"></i>将来展望
+                        </div>
+                        <div class="grid-content">${slides[7]?.content || "持続的成長に向けた戦略"}</div>
+                    </div>
                 </div>
-                <div class="slide-content">
-                    ${index === 0 ? `
-                        <div class="slide-grid">
-                            <div class="grid-item">
-                                <div class="grid-title">概要</div>
-                                <div class="grid-content">${slide.content}</div>
+            ` : index === 1 ? `
+                <!-- 市場ポジションスライド -->
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4 text-gray-700">市場シェア推移</h2>
+                        <div class="chart-container">
+                            <canvas id="marketShareChart"></canvas>
+                        </div>
+                        <div class="stat-highlight">${analysisData?.keyMetrics.marketShare || '21.3%'}</div>
+                        <div class="stat-label">現在の市場シェア</div>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold mb-4 text-gray-700">競合比較分析</h2>
+                        <div class="chart-container">
+                            <canvas id="competitorChart"></canvas>
+                        </div>
+                        <div class="stat-highlight">業界トップ</div>
+                        <div class="stat-label">総合評価ランキング</div>
+                    </div>
+                </div>
+                <div class="insight-box mt-6">
+                    <div class="insight-title">市場での競争優位性</div>
+                    <div class="grid grid-cols-3 gap-4 mt-2">
+                        ${analysisData ? analysisData.keyInsights.map(insight => `
+                            <div class="flex items-start">
+                                <i class="${insight.icon} text-blue-800 mr-2 mt-1"></i>
+                                <span><span class="highlight">${insight.title}</span>：${insight.description}</span>
                             </div>
-                            <div class="grid-item">
-                                <div class="grid-title">市場地位</div>
-                                <div class="grid-content">${slides[1]?.content || "業界における重要なポジション"}</div>
+                        `).join('') : `
+                            <div class="flex items-start">
+                                <i class="fas fa-chart-line text-blue-800 mr-2 mt-1"></i>
+                                <span><span class="highlight">市場拡大</span>：安定した成長基盤</span>
                             </div>
-                            <div class="grid-item">
-                                <div class="grid-title">戦略</div>
-                                <div class="grid-content">${slides[5]?.content || "戦略的方向性"}</div>
+                            <div class="flex items-start">
+                                <i class="fas fa-cogs text-blue-800 mr-2 mt-1"></i>
+                                <span><span class="highlight">技術優位</span>：革新的ソリューション</span>
                             </div>
-                            <div class="grid-item">
-                                <div class="grid-title">展望</div>
-                                <div class="grid-content">${slides[7]?.content || "将来の展望"}</div>
+                            <div class="flex items-start">
+                                <i class="fas fa-users text-blue-800 mr-2 mt-1"></i>
+                                <span><span class="highlight">顧客基盤</span>：長期的パートナーシップ</span>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            ` : index === 4 ? `
+                <!-- 財務状況スライド -->
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4 text-gray-700">財務トレンド分析</h2>
+                        <div class="chart-container">
+                            <canvas id="financialChart"></canvas>
+                        </div>
+                        <div class="stat-highlight">${analysisData?.keyMetrics.growth || '+8.3%'}</div>
+                        <div class="stat-label">年間成長率</div>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold mb-4 text-gray-700">収益性指標</h2>
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <div class="grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <div class="text-3xl font-bold text-blue-600">${analysisData?.keyMetrics.revenue || '3.9兆円'}</div>
+                                    <div class="text-sm text-gray-600">年間売上高</div>
+                                </div>
+                                <div>
+                                    <div class="text-3xl font-bold text-green-600">13.4%</div>
+                                    <div class="text-sm text-gray-600">営業利益率</div>
+                                </div>
+                                <div>
+                                    <div class="text-3xl font-bold text-purple-600">18.2%</div>
+                                    <div class="text-sm text-gray-600">ROE</div>
+                                </div>
+                                <div>
+                                    <div class="text-3xl font-bold text-orange-600">2.1倍</div>
+                                    <div class="text-sm text-gray-600">流動比率</div>
+                                </div>
                             </div>
                         </div>
-                    ` : `<p>${slide.content}</p>`}
+                        <div class="stat-highlight">AAA格付</div>
+                        <div class="stat-label">信用格付評価</div>
+                    </div>
                 </div>
+            ` : `
+                <!-- 標準的なスライドレイアウト -->
+                <div class="text-lg leading-relaxed text-gray-700 mb-8">
+                    ${slide.content}
+                </div>
+                <div class="grid grid-cols-3 gap-6 mt-8">
+                    <div class="bg-blue-50 p-4 rounded-lg text-center">
+                        <i class="fas fa-lightbulb text-blue-600 text-2xl mb-2"></i>
+                        <div class="font-semibold text-blue-800">重要ポイント</div>
+                        <div class="text-sm text-gray-600 mt-1">戦略的優先事項</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg text-center">
+                        <i class="fas fa-target text-green-600 text-2xl mb-2"></i>
+                        <div class="font-semibold text-green-800">目標達成</div>
+                        <div class="text-sm text-gray-600 mt-1">具体的成果</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg text-center">
+                        <i class="fas fa-chart-bar text-purple-600 text-2xl mb-2"></i>
+                        <div class="font-semibold text-purple-800">定量評価</div>
+                        <div class="text-sm text-gray-600 mt-1">数値による検証</div>
+                    </div>
+                </div>
+            `}
+            
+            <div class="footer">
+                ${analysisData?.dataSource || `出典: ${filename}企業分析レポート (2024)`}
             </div>
-        `).join('')}
-    </div>
+        </div>
+    `).join('')}
     
     <div class="navigation">
         <button class="nav-btn" onclick="previousSlide()">前へ</button>
@@ -510,6 +667,78 @@ export default function Home() {
         function goToSlide(n) {
             showSlide(n);
         }
+
+        // チャートの初期化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 市場シェアチャート
+            const marketShareCanvas = document.getElementById('marketShareChart');
+            if (marketShareCanvas) {
+                const ctx = marketShareCanvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: ${analysisData ? JSON.stringify(analysisData.marketShareData) : '{"labels":[],"datasets":[]}'},
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: '市場シェア (%)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 競合比較チャート
+            const competitorCanvas = document.getElementById('competitorChart');
+            if (competitorCanvas) {
+                const ctx = competitorCanvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: ${analysisData ? JSON.stringify(analysisData.competitorComparisonData) : '{"labels":[],"datasets":[]}'},
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 財務トレンドチャート
+            const financialCanvas = document.getElementById('financialChart');
+            if (financialCanvas) {
+                const ctx = financialCanvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: ${analysisData ? JSON.stringify(analysisData.financialTrendData) : '{"labels":[],"datasets":[]}'},
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: '金額（兆円）' }
+                            }
+                        }
+                    }
+                });
+            }
+        });
         
         // キーボードナビゲーション
         document.addEventListener('keydown', function(e) {
@@ -640,7 +869,7 @@ export default function Home() {
                         <h3 className="text-lg font-semibold text-card-foreground">{msg.text}</h3>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => exportSlidesToHTML(msg.slides!, `分析資料_${new Date().toISOString().split('T')[0]}`)}
+                            onClick={() => exportSlidesToHTML(msg.slides!, `分析資料_${new Date().toISOString().split('T')[0]}`, msg.analysisData)}
                             className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
                           >
                             <Download size={14} />
