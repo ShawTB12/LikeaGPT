@@ -104,11 +104,9 @@ export default function Home() {
   const [slidePreviewData, setSlidePreviewData] = useState<{
     slides: SlideData[];
     analysisData?: CompanyAnalysis;
-    currentSlide: number;
     generationProgress: number; // 0-8の生成進行状況
   }>({
     slides: [],
-    currentSlide: 0,
     generationProgress: 0
   })
 
@@ -787,7 +785,6 @@ export default function Home() {
     setSlidePreviewData({
       slides: [],
       analysisData: analysis,
-      currentSlide: 0,
       generationProgress: 0
     })
     setShowSlidePreview(true)
@@ -1046,109 +1043,207 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                // スライドプレビュー表示
-                <div className="p-4 h-full">
-                  {/* スライドビューワー */}
-                  <div className="bg-white rounded-lg aspect-video mb-4 p-6 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 to-blue-500"></div>
-                    
-                    {slidePreviewData.slides[slidePreviewData.currentSlide] && (
-                      <div className="h-full flex flex-col">
-                        <div className="mb-4">
-                          <div className="text-purple-600 text-sm font-semibold mb-2">
-                            {slidePreviewData.currentSlide + 1} / 8
+                // 縦列スライド表示
+                <div className="p-4 h-full overflow-y-auto">
+                  <div className="space-y-6">
+                    {slidePreviewData.slides.map((slide, index) => (
+                      <div key={slide.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                        {/* スライドヘッダー */}
+                        <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2"></div>
+                        <div className="p-4 border-b">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="text-purple-600 text-sm font-semibold">
+                                {index + 1} / 8
+                              </span>
+                              <h3 className="text-lg font-bold text-gray-800 mt-1">
+                                {slide.title}
+                              </h3>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs text-gray-500">
+                                {new Date().toLocaleDateString('ja-JP')}
+                              </span>
+                            </div>
                           </div>
-                          <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                            {slidePreviewData.slides[slidePreviewData.currentSlide].title}
-                          </h2>
                         </div>
-                        
-                        {slidePreviewData.currentSlide === 0 ? (
-                          // 最初のスライドは2×2グリッド
-                          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-3">
-                            <div className="bg-purple-50 rounded-lg p-3 border-2 border-purple-200">
-                              <h4 className="font-semibold text-purple-700 mb-2 text-sm">企業概要</h4>
-                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[0]?.content}</p>
+
+                        {/* スライドコンテンツ */}
+                        <div className="p-6 aspect-video">
+                          {index === 0 ? (
+                            // 最初のスライドは2×2グリッド
+                            <div className="h-full grid grid-cols-2 grid-rows-2 gap-4">
+                              <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-200">
+                                <h4 className="font-semibold text-purple-700 mb-2">
+                                  <i className="fas fa-building mr-2"></i>企業概要
+                                </h4>
+                                <p className="text-gray-600 text-sm leading-relaxed">{slide.content}</p>
+                              </div>
+                              <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                                <h4 className="font-semibold text-blue-700 mb-2">
+                                  <i className="fas fa-chart-pie mr-2"></i>主要指標
+                                </h4>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                  {slidePreviewData.analysisData ? `
+                                    売上高: ${slidePreviewData.analysisData.keyMetrics.revenue}
+                                    成長率: ${slidePreviewData.analysisData.keyMetrics.growth}
+                                    市場シェア: ${slidePreviewData.analysisData.keyMetrics.marketShare}
+                                  ` : '主要な業績指標と企業規模'}
+                                </p>
+                              </div>
+                              <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+                                <h4 className="font-semibold text-green-700 mb-2">
+                                  <i className="fas fa-trophy mr-2"></i>競争優位性
+                                </h4>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                  {slidePreviewData.slides[1]?.content || "業界における強固なポジション"}
+                                </p>
+                              </div>
+                              <div className="bg-orange-50 rounded-lg p-4 border-2 border-orange-200">
+                                <h4 className="font-semibold text-orange-700 mb-2">
+                                  <i className="fas fa-rocket mr-2"></i>将来展望
+                                </h4>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                  {slidePreviewData.slides[7]?.content || "持続的成長に向けた戦略"}
+                                </p>
+                              </div>
                             </div>
-                            <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-200">
-                              <h4 className="font-semibold text-blue-700 mb-2 text-sm">市場地位</h4>
-                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[1]?.content || "業界における重要なポジション"}</p>
+                          ) : index === 1 ? (
+                            // 市場ポジションスライド（チャート付き）
+                            <div className="h-full">
+                              <div className="grid grid-cols-2 gap-6 h-full">
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-3">市場シェア推移</h4>
+                                  <div className="bg-gray-100 rounded-lg h-32 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="text-2xl font-bold text-blue-600 mb-1">
+                                        {slidePreviewData.analysisData?.keyMetrics.marketShare || '21.3%'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">現在の市場シェア</div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3">
+                                    <p className="text-gray-600 text-sm">{slide.content}</p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-3">競合比較</h4>
+                                  <div className="bg-gray-100 rounded-lg h-32 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="text-2xl font-bold text-green-600 mb-1">業界トップ</div>
+                                      <div className="text-xs text-gray-500">総合評価ランキング</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="bg-green-50 rounded-lg p-3 border-2 border-green-200">
-                              <h4 className="font-semibold text-green-700 mb-2 text-sm">戦略</h4>
-                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[5]?.content || "戦略的方向性"}</p>
+                          ) : index === 4 ? (
+                            // 財務状況スライド
+                            <div className="h-full">
+                              <div className="grid grid-cols-2 gap-6 h-full">
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-3">財務トレンド</h4>
+                                  <div className="bg-gray-100 rounded-lg h-32 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="text-2xl font-bold text-blue-600 mb-1">
+                                        {slidePreviewData.analysisData?.keyMetrics.growth || '+8.3%'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">年間成長率</div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3">
+                                    <p className="text-gray-600 text-sm">{slide.content}</p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-3">収益性指標</h4>
+                                  <div className="grid grid-cols-2 gap-2 text-center">
+                                    <div className="bg-blue-50 p-2 rounded">
+                                      <div className="text-lg font-bold text-blue-600">
+                                        {slidePreviewData.analysisData?.keyMetrics.revenue || '3.9兆円'}
+                                      </div>
+                                      <div className="text-xs text-gray-600">売上高</div>
+                                    </div>
+                                    <div className="bg-green-50 p-2 rounded">
+                                      <div className="text-lg font-bold text-green-600">13.4%</div>
+                                      <div className="text-xs text-gray-600">営業利益率</div>
+                                    </div>
+                                    <div className="bg-purple-50 p-2 rounded">
+                                      <div className="text-lg font-bold text-purple-600">18.2%</div>
+                                      <div className="text-xs text-gray-600">ROE</div>
+                                    </div>
+                                    <div className="bg-orange-50 p-2 rounded">
+                                      <div className="text-lg font-bold text-orange-600">AAA</div>
+                                      <div className="text-xs text-gray-600">格付</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="bg-orange-50 rounded-lg p-3 border-2 border-orange-200">
-                              <h4 className="font-semibold text-orange-700 mb-2 text-sm">展望</h4>
-                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[7]?.content || "将来の展望"}</p>
+                          ) : (
+                            // 標準スライドレイアウト
+                            <div className="h-full flex flex-col">
+                              <div className="flex-1 mb-4">
+                                <p className="text-gray-700 leading-relaxed">{slide.content}</p>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 mt-auto">
+                                <div className="bg-blue-50 p-3 rounded-lg text-center">
+                                  <i className="fas fa-lightbulb text-blue-600 text-xl mb-2"></i>
+                                  <div className="text-sm font-semibold text-blue-800">重要ポイント</div>
+                                </div>
+                                <div className="bg-green-50 p-3 rounded-lg text-center">
+                                  <i className="fas fa-target text-green-600 text-xl mb-2"></i>
+                                  <div className="text-sm font-semibold text-green-800">目標達成</div>
+                                </div>
+                                <div className="bg-purple-50 p-3 rounded-lg text-center">
+                                  <i className="fas fa-chart-bar text-purple-600 text-xl mb-2"></i>
+                                  <div className="text-sm font-semibold text-purple-800">定量評価</div>
+                                </div>
+                              </div>
                             </div>
+                          )}
+                        </div>
+
+                        {/* スライドフッター */}
+                        <div className="px-6 py-3 bg-gray-50 border-t">
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>
+                              出典: {slidePreviewData.analysisData?.dataSource || '企業分析レポート (2024)'}
+                            </span>
+                            <span>Powered by Central Agent</span>
                           </div>
-                        ) : (
-                          <div className="flex-1 flex items-center">
-                            <p className="text-gray-700 text-sm leading-relaxed">
-                              {slidePreviewData.slides[slidePreviewData.currentSlide].content}
-                            </p>
-                          </div>
-                        )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 生成中のプレースホルダー */}
+                    {slidePreviewData.generationProgress < 8 && (
+                      <div className="bg-neutral-800 rounded-lg border-2 border-dashed border-neutral-600 p-8 text-center">
+                        <div className="animate-pulse">
+                          <div className="w-16 h-16 bg-neutral-700 rounded-full mx-auto mb-4"></div>
+                          <div className="h-4 bg-neutral-700 rounded w-32 mx-auto mb-2"></div>
+                          <div className="h-3 bg-neutral-700 rounded w-24 mx-auto"></div>
+                        </div>
+                        <p className="text-gray-400 text-sm mt-4">
+                          次のスライドを生成中... ({slidePreviewData.generationProgress + 1}/8)
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  {/* ナビゲーション */}
-                  <div className="flex justify-between items-center mb-4">
-                    <button
-                      onClick={() => setSlidePreviewData(prev => ({ 
-                        ...prev, 
-                        currentSlide: Math.max(0, prev.currentSlide - 1) 
-                      }))}
-                      disabled={slidePreviewData.currentSlide === 0}
-                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
-                    >
-                      前へ
-                    </button>
-                    
-                    <div className="flex gap-2">
-                      {Array.from({ length: 8 }, (_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setSlidePreviewData(prev => ({ ...prev, currentSlide: i }))}
-                          className={`w-3 h-3 rounded-full transition-all ${
-                            i === slidePreviewData.currentSlide 
-                              ? 'bg-purple-500 scale-125' 
-                              : i < slidePreviewData.generationProgress 
-                                ? 'bg-gray-400 hover:bg-gray-300' 
-                                : 'bg-gray-600'
-                          }`}
-                          disabled={i >= slidePreviewData.generationProgress}
-                        />
-                      ))}
-                    </div>
-                    
-                    <button
-                      onClick={() => setSlidePreviewData(prev => ({ 
-                        ...prev, 
-                        currentSlide: Math.min(prev.generationProgress - 1, prev.currentSlide + 1) 
-                      }))}
-                      disabled={slidePreviewData.currentSlide >= slidePreviewData.generationProgress - 1}
-                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
-                    >
-                      次へ
-                    </button>
-                  </div>
-
                   {/* エクスポートボタン */}
                   {slidePreviewData.generationProgress === 8 && (
-                    <div className="flex justify-center">
+                    <div className="mt-6 p-4 bg-neutral-800 rounded-lg">
                       <button
                         onClick={() => exportSlidesToHTML(
                           slidePreviewData.slides, 
                           `分析資料_${slidePreviewData.analysisData?.companyName}_${new Date().toISOString().split('T')[0]}`, 
                           slidePreviewData.analysisData
                         )}
-                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                       >
                         <Download size={20} />
-                        HTMLでエクスポート
+                        HTMLプレゼンテーションをエクスポート
                       </button>
                     </div>
                   )}
