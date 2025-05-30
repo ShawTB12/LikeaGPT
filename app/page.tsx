@@ -100,6 +100,17 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState<{ [key: number]: number }>({})
+  const [showSlidePreview, setShowSlidePreview] = useState(false)
+  const [slidePreviewData, setSlidePreviewData] = useState<{
+    slides: SlideData[];
+    analysisData?: CompanyAnalysis;
+    currentSlide: number;
+    generationProgress: number; // 0-8の生成進行状況
+  }>({
+    slides: [],
+    currentSlide: 0,
+    generationProgress: 0
+  })
 
   const backgroundImageStyle = {
     backgroundImage: "url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop')",
@@ -164,18 +175,17 @@ export default function Home() {
       try {
         // 企業分析を実行
         const analysis = await analyzeCompany(query)
-        const slides = generateSlidesFromAnalysis(analysis)
         
-        const slideMessage: Message = {
-          text: `${analysis.companyName}の企業分析資料を作成しました。`,
+        // 段階的スライド生成を開始
+        generateSlidesProgressively(analysis)
+        
+        const aiMessage: Message = {
+          text: `${analysis.companyName}の企業分析を開始しました。右側でスライドを順次生成しています。`,
           sender: "ai",
-          type: "slides",
-          slides: slides,
-          analysisData: analysis
+          type: "text"
         }
         
-        setMessages(prev => [...prev, slideMessage])
-        setCurrentSlideIndex(prev => ({ ...prev, [messages.length + 1]: 0 }))
+        setMessages(prev => [...prev, aiMessage])
       } catch (error) {
         const errorMessage: Message = {
           text: "申し訳ございません。企業分析中にエラーが発生しました。",
@@ -760,6 +770,40 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
+  // 段階的スライド生成機能
+  const generateSlidesProgressively = async (analysis: CompanyAnalysis) => {
+    const slideTemplates = [
+      { id: 1, title: `${analysis.companyName}の概要`, content: analysis.overview },
+      { id: 2, title: "市場ポジション", content: analysis.marketPosition },
+      { id: 3, title: "主要な課題", content: analysis.challenges },
+      { id: 4, title: "解決策・戦略", content: analysis.solutions },
+      { id: 5, title: "財務状況", content: analysis.financialStatus },
+      { id: 6, title: "戦略的方向性", content: analysis.strategy },
+      { id: 7, title: "リスク分析", content: analysis.risks },
+      { id: 8, title: "結論と展望", content: analysis.conclusion }
+    ]
+
+    // 初期化：枠を表示
+    setSlidePreviewData({
+      slides: [],
+      analysisData: analysis,
+      currentSlide: 0,
+      generationProgress: 0
+    })
+    setShowSlidePreview(true)
+
+    // 1枚ずつ生成
+    for (let i = 0; i < slideTemplates.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000)) // 1秒間隔で生成
+      
+      setSlidePreviewData(prev => ({
+        ...prev,
+        slides: [...prev.slides, slideTemplates[i]],
+        generationProgress: i + 1
+      }))
+    }
+  }
+
   return (
     <SidebarProvider defaultOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <div 
@@ -828,7 +872,7 @@ export default function Home() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 w-full min-w-0 flex flex-col transition-all duration-300 ease-in-out bg-neutral-900/80 backdrop-blur-lg text-gray-100">
+        <main className={`flex-1 w-full min-w-0 flex flex-col transition-all duration-300 ease-in-out bg-neutral-900/80 backdrop-blur-lg text-gray-100 ${showSlidePreview ? 'mr-[65%]' : ''}`}>
           <header className="bg-neutral-900/60 backdrop-blur-lg p-4 flex items-center justify-between sticky top-0 z-10 border-b border-neutral-700/50 text-gray-100">
             <div className="flex items-center space-x-3">
               <button className="p-2 rounded-md hover:bg-neutral-700/60" onClick={toggleSidebar}>
@@ -861,121 +905,15 @@ export default function Home() {
                   msg.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.type === "slides" && msg.slides ? (
-                  // スライド表示
-                  <div className="max-w-4xl w-full">
-                    <div className="bg-card/50 border border-card-foreground/20 rounded-xl p-4 backdrop-blur-md">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-card-foreground">{msg.text}</h3>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => exportSlidesToHTML(msg.slides!, `分析資料_${new Date().toISOString().split('T')[0]}`, msg.analysisData)}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
-                          >
-                            <Download size={14} />
-                            HTML出力
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {/* スライドプレビュー */}
-                      <div className="bg-white rounded-lg aspect-video p-6 relative overflow-hidden mb-4">
-                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 to-blue-500"></div>
-                        
-                        {msg.slides[currentSlideIndex[index] || 0] && (
-                          <div className="h-full flex flex-col">
-                            <div className="mb-4">
-                              <div className="text-purple-600 text-sm font-semibold mb-2">
-                                {(currentSlideIndex[index] || 0) + 1} / {msg.slides.length}
-                              </div>
-                              <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                                {msg.slides[currentSlideIndex[index] || 0].title}
-                              </h2>
-                            </div>
-                            
-                            {(currentSlideIndex[index] || 0) === 0 ? (
-                              // 最初のスライドは2列2行のレイアウト
-                              <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-3">
-                                <div className="bg-purple-50 rounded-lg p-3 border-2 border-purple-200">
-                                  <h4 className="font-semibold text-purple-700 mb-2 text-sm">概要</h4>
-                                  <p className="text-gray-600 text-xs leading-relaxed">{msg.slides[0].content}</p>
-                                </div>
-                                <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-200">
-                                  <h4 className="font-semibold text-blue-700 mb-2 text-sm">市場地位</h4>
-                                  <p className="text-gray-600 text-xs leading-relaxed">{msg.slides[1]?.content || "業界における重要なポジション"}</p>
-                                </div>
-                                <div className="bg-green-50 rounded-lg p-3 border-2 border-green-200">
-                                  <h4 className="font-semibold text-green-700 mb-2 text-sm">戦略</h4>
-                                  <p className="text-gray-600 text-xs leading-relaxed">{msg.slides[5]?.content || "戦略的方向性"}</p>
-                                </div>
-                                <div className="bg-orange-50 rounded-lg p-3 border-2 border-orange-200">
-                                  <h4 className="font-semibold text-orange-700 mb-2 text-sm">展望</h4>
-                                  <p className="text-gray-600 text-xs leading-relaxed">{msg.slides[7]?.content || "将来の展望"}</p>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex-1 flex items-center">
-                                <p className="text-gray-700 text-sm leading-relaxed">
-                                  {msg.slides[currentSlideIndex[index] || 0].content}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* ナビゲーション */}
-                      <div className="flex justify-between items-center">
-                        <button
-                          onClick={() => setCurrentSlideIndex(prev => ({ 
-                            ...prev, 
-                            [index]: Math.max(0, (prev[index] || 0) - 1) 
-                          }))}
-                          disabled={(currentSlideIndex[index] || 0) === 0}
-                          className="px-3 py-1 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
-                        >
-                          前へ
-                        </button>
-                        
-                        <div className="flex gap-1">
-                          {msg.slides.map((_, slideIndex) => (
-                            <button
-                              key={slideIndex}
-                              onClick={() => setCurrentSlideIndex(prev => ({ ...prev, [index]: slideIndex }))}
-                              className={`w-2 h-2 rounded-full transition-all ${
-                                slideIndex === (currentSlideIndex[index] || 0) 
-                                  ? 'bg-purple-500 scale-125' 
-                                  : 'bg-gray-300 hover:bg-gray-400'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        
-                        <button
-                          onClick={() => setCurrentSlideIndex(prev => ({ 
-                            ...prev, 
-                            [index]: Math.min(msg.slides!.length - 1, (prev[index] || 0) + 1) 
-                          }))}
-                          disabled={(currentSlideIndex[index] || 0) === msg.slides.length - 1}
-                          className="px-3 py-1 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
-                        >
-                          次へ
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  // 通常のテキストメッセージ
-                  <div
-                    className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${
-                      msg.sender === "user"
-                        ? "bg-primary/60 border-primary/40 text-primary-foreground"
-                        : "bg-card/50 border-card-foreground/20 text-card-foreground"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                )}
+                <div
+                  className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${
+                    msg.sender === "user"
+                      ? "bg-primary/60 border-primary/40 text-primary-foreground"
+                      : "bg-card/50 border-card-foreground/20 text-card-foreground"
+                  }`}
+                >
+                  {msg.text}
+                </div>
               </div>
             ))}
             
@@ -1051,6 +989,171 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 右側スライドプレビューエリア */}
+        {showSlidePreview && (
+          <div className="fixed top-0 right-0 w-[65%] h-full bg-neutral-900/95 backdrop-blur-lg border-l border-neutral-700/50 z-30">
+            {/* ヘッダー */}
+            <div className="bg-neutral-800/80 backdrop-blur-lg p-4 border-b border-neutral-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="text-purple-400" size={24} />
+                  <h2 className="text-lg font-semibold text-white">
+                    {slidePreviewData.analysisData?.companyName || '企業分析'} プレゼンテーション
+                  </h2>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-400">
+                    {slidePreviewData.generationProgress} / 8
+                  </span>
+                  <button
+                    onClick={() => setShowSlidePreview(false)}
+                    className="p-2 hover:bg-neutral-700 rounded-lg transition-colors text-gray-400"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              
+              {/* タブ */}
+              <div className="flex gap-4 mt-4">
+                <button className="px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm">
+                  プレビュー
+                </button>
+                <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+                  コード
+                </button>
+                <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+                  考え中
+                </button>
+              </div>
+            </div>
+
+            {/* メインコンテンツエリア */}
+            <div className="flex-1 h-full overflow-hidden">
+              {slidePreviewData.generationProgress === 0 ? (
+                // 初期枠表示
+                <div className="p-8 h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin mb-4">
+                      <Search size={48} className="text-purple-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">スライドを準備中...</h3>
+                    <p className="text-gray-400">企業分析データからプレゼンテーション資料を生成しています</p>
+                  </div>
+                </div>
+              ) : (
+                // スライドプレビュー表示
+                <div className="p-4 h-full">
+                  {/* スライドビューワー */}
+                  <div className="bg-white rounded-lg aspect-video mb-4 p-6 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 to-blue-500"></div>
+                    
+                    {slidePreviewData.slides[slidePreviewData.currentSlide] && (
+                      <div className="h-full flex flex-col">
+                        <div className="mb-4">
+                          <div className="text-purple-600 text-sm font-semibold mb-2">
+                            {slidePreviewData.currentSlide + 1} / 8
+                          </div>
+                          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                            {slidePreviewData.slides[slidePreviewData.currentSlide].title}
+                          </h2>
+                        </div>
+                        
+                        {slidePreviewData.currentSlide === 0 ? (
+                          // 最初のスライドは2×2グリッド
+                          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-3">
+                            <div className="bg-purple-50 rounded-lg p-3 border-2 border-purple-200">
+                              <h4 className="font-semibold text-purple-700 mb-2 text-sm">企業概要</h4>
+                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[0]?.content}</p>
+                            </div>
+                            <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-200">
+                              <h4 className="font-semibold text-blue-700 mb-2 text-sm">市場地位</h4>
+                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[1]?.content || "業界における重要なポジション"}</p>
+                            </div>
+                            <div className="bg-green-50 rounded-lg p-3 border-2 border-green-200">
+                              <h4 className="font-semibold text-green-700 mb-2 text-sm">戦略</h4>
+                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[5]?.content || "戦略的方向性"}</p>
+                            </div>
+                            <div className="bg-orange-50 rounded-lg p-3 border-2 border-orange-200">
+                              <h4 className="font-semibold text-orange-700 mb-2 text-sm">展望</h4>
+                              <p className="text-gray-600 text-xs leading-relaxed">{slidePreviewData.slides[7]?.content || "将来の展望"}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex items-center">
+                            <p className="text-gray-700 text-sm leading-relaxed">
+                              {slidePreviewData.slides[slidePreviewData.currentSlide].content}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ナビゲーション */}
+                  <div className="flex justify-between items-center mb-4">
+                    <button
+                      onClick={() => setSlidePreviewData(prev => ({ 
+                        ...prev, 
+                        currentSlide: Math.max(0, prev.currentSlide - 1) 
+                      }))}
+                      disabled={slidePreviewData.currentSlide === 0}
+                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
+                    >
+                      前へ
+                    </button>
+                    
+                    <div className="flex gap-2">
+                      {Array.from({ length: 8 }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSlidePreviewData(prev => ({ ...prev, currentSlide: i }))}
+                          className={`w-3 h-3 rounded-full transition-all ${
+                            i === slidePreviewData.currentSlide 
+                              ? 'bg-purple-500 scale-125' 
+                              : i < slidePreviewData.generationProgress 
+                                ? 'bg-gray-400 hover:bg-gray-300' 
+                                : 'bg-gray-600'
+                          }`}
+                          disabled={i >= slidePreviewData.generationProgress}
+                        />
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setSlidePreviewData(prev => ({ 
+                        ...prev, 
+                        currentSlide: Math.min(prev.generationProgress - 1, prev.currentSlide + 1) 
+                      }))}
+                      disabled={slidePreviewData.currentSlide >= slidePreviewData.generationProgress - 1}
+                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
+                    >
+                      次へ
+                    </button>
+                  </div>
+
+                  {/* エクスポートボタン */}
+                  {slidePreviewData.generationProgress === 8 && (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => exportSlidesToHTML(
+                          slidePreviewData.slides, 
+                          `分析資料_${slidePreviewData.analysisData?.companyName}_${new Date().toISOString().split('T')[0]}`, 
+                          slidePreviewData.analysisData
+                        )}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                      >
+                        <Download size={20} />
+                        HTMLでエクスポート
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
