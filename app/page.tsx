@@ -22,6 +22,7 @@ import {
   PanelLeft,
   Presentation,
   Download,
+  Zap,
 } from "lucide-react"
 import {
   Sidebar,
@@ -34,14 +35,17 @@ import {
   SidebarNavItem,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { useStreamingAnalysis } from "@/hooks/useStreamingAnalysis"
+import { StreamingAnalysis } from "@/components/StreamingAnalysis"
 
 // Message型を定義
 interface Message {
   text: string;
   sender: string;
-  type?: 'text' | 'slides';
+  type?: 'text' | 'slides' | 'streaming';
   slides?: SlideData[];
   analysisData?: CompanyAnalysis;
+  streamingId?: string;
 }
 
 interface SlideData {
@@ -104,11 +108,14 @@ export default function Home() {
   const [slidePreviewData, setSlidePreviewData] = useState<{
     slides: SlideData[];
     analysisData?: CompanyAnalysis;
-    generationProgress: number; // 0-8の生成進行状況
+    generationProgress: number;
   }>({
     slides: [],
     generationProgress: 0
   })
+
+  // ストリーミング分析フック
+  const streamingAnalysis = useStreamingAnalysis()
 
   const backgroundImageStyle = {
     backgroundImage: "url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop')",
@@ -168,39 +175,37 @@ export default function Home() {
 
     // 企業分析が必要かチェック
     if (isCompanyQuery(query)) {
-      setIsAnalyzing(true)
+      // ストリーミング分析専用のメッセージを追加
+      const streamingMessageId = `streaming-${Date.now()}`
+      const streamingMessage: Message = {
+        text: `${extractCompanyName(query)}のリアルタイム分析を開始します...`,
+        sender: "ai",
+        type: "streaming",
+        streamingId: streamingMessageId
+      }
       
+      setMessages(prev => [...prev, streamingMessage])
+      
+      // ストリーミング分析を開始
       try {
-        // 企業分析を実行
-        const analysis = await analyzeCompany(query)
-        
-        // 段階的スライド生成を開始
-        generateSlidesProgressively(analysis)
-        
-        const aiMessage: Message = {
-          text: `${analysis.companyName}の企業分析を開始しました。右側でスライドを順次生成しています。`,
-          sender: "ai",
-          type: "text"
-        }
-        
-        setMessages(prev => [...prev, aiMessage])
+        const companyName = extractCompanyName(query)
+        await streamingAnalysis.startStreaming(companyName)
       } catch (error) {
         const errorMessage: Message = {
-          text: "申し訳ございません。企業分析中にエラーが発生しました。",
+          text: "申し訳ございません。ストリーミング分析中にエラーが発生しました。",
           sender: "ai",
           type: "text"
         }
         setMessages(prev => [...prev, errorMessage])
-      } finally {
-        setIsAnalyzing(false)
       }
     } else {
       // 通常のチャット応答
       const aiMessage: Message = {
-        text: "ご質問ありがとうございます。企業名を入力していただければ、詳細な企業分析資料を作成いたします。",
+        text: "ご質問ありがとうございます。企業名を入力していただければ、詳細なリアルタイム企業分析を実行いたします。",
         sender: "ai",
         type: "text"
       }
+      
       setMessages(prev => [...prev, aiMessage])
     }
   }
@@ -309,10 +314,38 @@ export default function Home() {
     ]
   }
 
-  // 企業名かどうかを判定（簡単な検証）
-  const isCompanyQuery = (text: string): boolean => {
-    const companyKeywords = ['株式会社', '会社', 'Inc', 'Corp', 'Ltd', 'LLC', 'Co.', '分析', '企業', 'について']
-    return companyKeywords.some(keyword => text.includes(keyword)) || /^[A-Za-z\s]+$/.test(text.trim())
+  // 企業名を抽出する関数
+  function extractCompanyName(query: string): string {
+    // 「〜の分析」「〜について」などの表現から企業名を抽出
+    const patterns = [
+      /(.+?)の分析/,
+      /(.+?)について/,
+      /(.+?)を分析/,
+      /(.+?)の企業分析/,
+      /(.+?)の情報/
+    ]
+    
+    for (const pattern of patterns) {
+      const match = query.match(pattern)
+      if (match) {
+        return match[1].trim()
+      }
+    }
+    
+    // パターンにマッチしない場合はクエリ全体を企業名として扱う
+    return query.trim()
+  }
+
+  // 企業分析クエリかどうかを判定する関数
+  function isCompanyQuery(query: string): boolean {
+    const companyKeywords = [
+      '分析', '企業', '会社', 'について', '情報', 'データ',
+      '業績', '財務', '戦略', '市場', '競合', 'ビジネス',
+      '売上', '利益', 'シェア', '将来', '課題', 'リスク'
+    ]
+    
+    return companyKeywords.some(keyword => query.includes(keyword)) ||
+           query.length > 1 // 短すぎない場合は企業名として扱う
   }
 
   const exportSlidesToHTML = (slides: SlideData[], filename: string, analysisData?: CompanyAnalysis) => {
@@ -902,15 +935,82 @@ export default function Home() {
                   msg.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${
-                    msg.sender === "user"
-                      ? "bg-primary/60 border-primary/40 text-primary-foreground"
-                      : "bg-card/50 border-card-foreground/20 text-card-foreground"
-                  }`}
-                >
-                  {msg.text}
-                </div>
+                {msg.type === 'streaming' ? (
+                  /* ストリーミング分析表示 */
+                  <div className="w-full max-w-4xl">
+                    <div className="mb-3 flex items-center gap-2 text-blue-400">
+                      <Zap size={20} />
+                      <span className="font-medium">リアルタイム企業分析</span>
+                    </div>
+                    <StreamingAnalysis
+                      messages={streamingAnalysis.messages}
+                      isStreaming={streamingAnalysis.isStreaming}
+                      progress={streamingAnalysis.progress}
+                      currentStage={streamingAnalysis.currentStage}
+                      error={streamingAnalysis.error}
+                      fullContent={streamingAnalysis.fullContent}
+                      onStop={streamingAnalysis.stopStreaming}
+                    />
+                    
+                    {/* 分析完了後のアクション */}
+                    {streamingAnalysis.currentStage === 'complete' && streamingAnalysis.fullContent && (
+                      <div className="mt-4 p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
+                        <h4 className="text-white font-medium mb-3">📊 分析完了 - 次のアクションを選択:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <button 
+                            className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
+                            onClick={() => {
+                              // スライド生成機能（既存のコードを再利用）
+                              setShowSlidePreview(true)
+                              // ストリーミング結果からスライドを生成する処理を追加
+                            }}
+                          >
+                            <Presentation size={16} />
+                            詳細スライド生成
+                          </button>
+                          <button 
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm transition-colors"
+                            onClick={() => {
+                              // HTMLエクスポート機能
+                              const content = streamingAnalysis.fullContent
+                              const blob = new Blob([content], { type: 'text/html' })
+                              const url = URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `企業分析レポート_${new Date().toISOString().split('T')[0]}.html`
+                              a.click()
+                              URL.revokeObjectURL(url)
+                            }}
+                          >
+                            <Download size={16} />
+                            レポート出力
+                          </button>
+                          <button 
+                            className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm transition-colors"
+                            onClick={() => {
+                              // 新しい分析開始
+                              streamingAnalysis.clearMessages()
+                            }}
+                          >
+                            <Plus size={16} />
+                            新しい分析
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* 通常のメッセージ表示 */
+                  <div
+                    className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${
+                      msg.sender === "user"
+                        ? "bg-primary/60 border-primary/40 text-primary-foreground"
+                        : "bg-card/50 border-card-foreground/20 text-card-foreground"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                )}
               </div>
             ))}
             
