@@ -37,6 +37,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useStreamingAnalysis } from "@/hooks/useStreamingAnalysis"
 import { StreamingAnalysis } from "@/components/StreamingAnalysis"
+import { AnimatedSlideCreation } from "@/components/AnimatedSlideCreation"
 
 // Message型を定義
 interface Message {
@@ -116,6 +117,10 @@ export default function Home() {
 
   // ストリーミング分析フック
   const streamingAnalysis = useStreamingAnalysis()
+
+  // アニメーションスライド作成の状態
+  const [showAnimatedSlideCreation, setShowAnimatedSlideCreation] = useState(false)
+  const [animatedSlideData, setAnimatedSlideData] = useState<any>(null)
 
   const backgroundImageStyle = {
     backgroundImage: "url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop')",
@@ -834,6 +839,30 @@ export default function Home() {
     }
   }
 
+  // 分析完了時の自動スライド作成開始
+  const handleAnalysisComplete = (analysisData: any) => {
+    console.log('🎯 handleAnalysisComplete が呼び出されました:', analysisData)
+    setAnimatedSlideData(analysisData)
+    setShowAnimatedSlideCreation(true)
+    console.log('🎯 アニメーションスライド作成を開始します')
+  }
+
+  // アニメーションスライド作成完了時
+  const handleAnimatedSlideComplete = (slides: any[]) => {
+    console.log('アニメーションスライド作成完了:', slides)
+    
+    // 完了メッセージを追加（アニメーションスライドは継続表示）
+    const completionMessage: Message = {
+      text: `🎉 ${animatedSlideData?.companyName || '企業'}の戦略分析プレゼンテーションが完成しました！右側でご確認ください。`,
+      sender: "ai",
+      type: "text"
+    }
+    setMessages(prev => [...prev, completionMessage])
+    
+    // アニメーションスライドは継続して表示（非表示にしない）
+    console.log('🎯 アニメーションスライドは継続表示中')
+  }
+
   return (
     <SidebarProvider defaultOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <div 
@@ -902,7 +931,7 @@ export default function Home() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className={`flex-1 w-full min-w-0 flex flex-col transition-all duration-300 ease-in-out bg-neutral-900/80 backdrop-blur-lg text-gray-100 ${showSlidePreview ? 'mr-[65%]' : ''}`}>
+        <main className={`flex-1 w-full min-w-0 flex flex-col transition-all duration-300 ease-in-out bg-neutral-900/80 backdrop-blur-lg text-gray-100 ${showSlidePreview || showAnimatedSlideCreation ? 'mr-[65%]' : ''}`}>
           <header className="bg-neutral-900/60 backdrop-blur-lg p-4 flex items-center justify-between sticky top-0 z-10 border-b border-neutral-700/50 text-gray-100">
             <div className="flex items-center space-x-3">
               <button className="p-2 rounded-md hover:bg-neutral-700/60" onClick={toggleSidebar}>
@@ -950,6 +979,7 @@ export default function Home() {
                       error={streamingAnalysis.error}
                       fullContent={streamingAnalysis.fullContent}
                       onStop={streamingAnalysis.stopStreaming}
+                      onAnalysisComplete={handleAnalysisComplete}
                     />
                     
                     {/* 分析完了後のアクション */}
@@ -1091,7 +1121,7 @@ export default function Home() {
         )}
 
         {/* 右側スライドプレビューエリア */}
-        {showSlidePreview && (
+        {(showSlidePreview || showAnimatedSlideCreation) && (
           <div className="fixed top-0 right-0 w-[65%] h-full bg-neutral-900/95 backdrop-blur-lg border-l border-neutral-700/50 z-30">
             {/* ヘッダー */}
             <div className="bg-neutral-800/80 backdrop-blur-lg p-4 border-b border-neutral-700/50">
@@ -1099,15 +1129,23 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <Sparkles className="text-purple-400" size={24} />
                   <h2 className="text-lg font-semibold text-white">
-                    {slidePreviewData.analysisData?.companyName || '企業分析'} プレゼンテーション
+                    {showAnimatedSlideCreation 
+                      ? `${animatedSlideData?.companyName || '企業'} スライド生成中...`
+                      : `${slidePreviewData.analysisData?.companyName || '企業分析'} プレゼンテーション`
+                    }
                   </h2>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-400">
-                    {slidePreviewData.generationProgress} / 8
-                  </span>
+                  {showSlidePreview && (
+                    <span className="text-sm text-gray-400">
+                      {slidePreviewData.generationProgress} / 8
+                    </span>
+                  )}
                   <button
-                    onClick={() => setShowSlidePreview(false)}
+                    onClick={() => {
+                      setShowSlidePreview(false)
+                      setShowAnimatedSlideCreation(false)
+                    }}
                     className="p-2 hover:bg-neutral-700 rounded-lg transition-colors text-gray-400"
                   >
                     <X size={20} />
@@ -1118,20 +1156,33 @@ export default function Home() {
               {/* タブ */}
               <div className="flex gap-4 mt-4">
                 <button className="px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm">
-                  プレビュー
+                  {showAnimatedSlideCreation ? 'ライブ生成' : 'プレビュー'}
                 </button>
-                <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
-                  コード
-                </button>
-                <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
-                  考え中
-                </button>
+                {!showAnimatedSlideCreation && (
+                  <>
+                    <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+                      コード
+                    </button>
+                    <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+                      設定
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
             {/* メインコンテンツエリア */}
             <div className="flex-1 h-full overflow-hidden">
-              {slidePreviewData.generationProgress === 0 ? (
+              {showAnimatedSlideCreation ? (
+                // アニメーションスライド作成表示
+                <div className="p-4 h-full">
+                  <AnimatedSlideCreation
+                    analysisData={animatedSlideData}
+                    isVisible={showAnimatedSlideCreation}
+                    onComplete={handleAnimatedSlideComplete}
+                  />
+                </div>
+              ) : slidePreviewData.generationProgress === 0 ? (
                 // 初期枠表示
                 <div className="p-8 h-full flex items-center justify-center">
                   <div className="text-center">

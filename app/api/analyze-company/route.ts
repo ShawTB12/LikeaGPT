@@ -58,10 +58,13 @@ export async function POST(request: NextRequest) {
     // 1. Web検索を実行
     console.log('Web検索を実行中...')
     const searchQueries = [
-      `${companyName} 企業概要 事業内容`,
-      `${companyName} 財務 業績 売上`,
-      `${companyName} 市場シェア 競合`,
-      `${companyName} 戦略 将来計画`
+      `${companyName} 企業概要 事業内容 設立背景`,
+      `${companyName} 財務 業績 売上 営業利益 ROE ROA 自己資本比率`,
+      `${companyName} 競合他社 市場シェア ポジショニング 業界ランキング`,
+      `${companyName} SWOT分析 強み 弱み 機会 脅威`,
+      `${companyName} 戦略 中期計画 投資計画 アクションプラン`,
+      `${companyName} 最新ニュース 3ヶ月 業界動向 M&A`,
+      `${companyName} リスク分析 企業価値評価 投資判断 目標株価`
     ]
 
     let searchResults

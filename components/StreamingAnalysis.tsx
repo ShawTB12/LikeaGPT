@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { StreamingMessage } from '@/hooks/useStreamingAnalysis'
-import { Loader2, StopCircle, AlertCircle, CheckCircle } from 'lucide-react'
+import { Loader2, StopCircle, AlertCircle, CheckCircle, Sparkles, Clock, Bug } from 'lucide-react'
 
 interface StreamingAnalysisProps {
   messages: StreamingMessage[]
@@ -10,6 +10,7 @@ interface StreamingAnalysisProps {
   error: string | null
   fullContent: string
   onStop?: () => void
+  onAnalysisComplete?: (analysisData: any) => void
 }
 
 export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
@@ -19,10 +20,15 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
   currentStage,
   error,
   fullContent,
-  onStop
+  onStop,
+  onAnalysisComplete
 }) => {
   const contentRef = useRef<HTMLDivElement>(null)
   const analysisContentRef = useRef<HTMLDivElement>(null)
+  const [autoTransitionTimer, setAutoTransitionTimer] = useState<number | null>(null)
+  const [debugInfo, setDebugInfo] = useState<any>({})
+  const [showDebug, setShowDebug] = useState(false)
+  const [manualTriggerAvailable, setManualTriggerAvailable] = useState(false)
 
   // 自動スクロール
   useEffect(() => {
@@ -30,6 +36,123 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
       contentRef.current.scrollTop = contentRef.current.scrollHeight
     }
   }, [messages, fullContent])
+
+  // デバッグ情報の更新
+  useEffect(() => {
+    const newDebugInfo = {
+      timestamp: new Date().toISOString(),
+      currentStage,
+      isStreaming,
+      messagesCount: messages.length,
+      fullContentLength: fullContent?.length || 0,
+      hasCompleteMessage: messages.some(msg => msg.type === 'analysis_complete'),
+      hasOnAnalysisComplete: !!onAnalysisComplete,
+      autoTransitionTimer: autoTransitionTimer !== null,
+      lastMessage: messages[messages.length - 1]?.type || 'none'
+    }
+    setDebugInfo(newDebugInfo)
+    console.log('🔍 StreamingAnalysis Debug:', newDebugInfo)
+  }, [currentStage, isStreaming, messages, fullContent, onAnalysisComplete, autoTransitionTimer])
+
+  // より確実な分析完了検知
+  useEffect(() => {
+    console.log('🎯 分析完了検知チェック開始')
+    
+    // 複数の条件で完了を判定
+    const hasCompleteMessage = messages.some(msg => msg.type === 'analysis_complete')
+    const hasSignificantContent = fullContent && fullContent.length > 500
+    const isAnalysisComplete = !isStreaming && hasSignificantContent
+    const stageIndicatesComplete = currentStage === 'complete'
+    
+    // 手動トリガーの有効化条件（より緩い条件）
+    if (hasSignificantContent && !isStreaming) {
+      setManualTriggerAvailable(true)
+    }
+    
+    console.log('🎯 完了検知状態:', {
+      hasCompleteMessage,
+      hasSignificantContent,
+      isAnalysisComplete,
+      stageIndicatesComplete,
+      isStreaming,
+      onAnalysisComplete: !!onAnalysisComplete
+    })
+    
+    // 自動遷移の条件
+    if ((isAnalysisComplete || stageIndicatesComplete || hasCompleteMessage) && onAnalysisComplete && !autoTransitionTimer) {
+      console.log('🚀 自動遷移タイマー開始（3秒）')
+      
+      const timer = setTimeout(() => {
+        console.log('🚀 自動遷移実行')
+        executeTransition()
+      }, 3000)
+
+      setAutoTransitionTimer(timer as any)
+
+      return () => {
+        if (timer) clearTimeout(timer)
+      }
+    }
+  }, [currentStage, fullContent, onAnalysisComplete, messages, isStreaming, autoTransitionTimer])
+
+  // タイムアウト機能（30秒後に強制的に手動オプションを有効化）
+  useEffect(() => {
+    if (isStreaming) {
+      const timeoutTimer = setTimeout(() => {
+        console.log('⏰ タイムアウト: 手動遷移を有効化')
+        setManualTriggerAvailable(true)
+      }, 30000) // 30秒
+
+      return () => clearTimeout(timeoutTimer)
+    }
+  }, [isStreaming])
+
+  const executeTransition = () => {
+    console.log('🎊 遷移を実行します')
+    
+    // 分析結果からメタデータを抽出
+    const completeMessage = messages.find(msg => msg.type === 'analysis_complete')
+    const analysisData = completeMessage?.metadata?.analysisData || {
+      companyName: extractCompanyNameFromContent(fullContent) || '企業名',
+      fullContent: fullContent,
+      searchResultsCount: messages.filter(msg => msg.type === 'analysis_progress').length,
+      dataSource: 'ストリーミング分析結果'
+    }
+    
+    console.log('🎊 分析データ:', analysisData)
+    
+    if (onAnalysisComplete) {
+      onAnalysisComplete(analysisData)
+      // タイマーをクリア
+      if (autoTransitionTimer) {
+        clearTimeout(autoTransitionTimer)
+        setAutoTransitionTimer(null)
+      }
+    }
+  }
+
+  // コンテンツから企業名を抽出する関数
+  const extractCompanyNameFromContent = (content: string): string | null => {
+    if (!content) return null
+    
+    // 「〜の企業分析」「〜について」などのパターンを探す
+    const patterns = [
+      /## 📈 (.+?)の/, 
+      /企業名[:\s]*(.+?)[\n\r]/,
+      /会社名[:\s]*(.+?)[\n\r]/,
+      /(.+?)の企業分析/,
+      /(.+?)について/
+    ]
+    
+    for (const pattern of patterns) {
+      const match = content.match(pattern)
+      if (match && match[1]) {
+        return match[1].trim()
+      }
+    }
+    
+    return null
+  }
 
   const getStageIcon = (stage: string) => {
     switch (stage) {
@@ -91,7 +214,7 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
               <span className="text-white font-medium">{getStageText(currentStage)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">{progress}%</span>
+              <span className="text-gray-400 text-sm">{Math.min(progress, 100)}%</span>
               {onStop && (
                 <button
                   onClick={onStop}
@@ -106,9 +229,58 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
           <div className="w-full bg-neutral-700 rounded-full h-2">
             <div
               className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {/* 自動遷移タイマー表示 */}
+      {autoTransitionTimer && (
+        <div className="bg-blue-800/30 border border-blue-600 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-blue-300">
+            <Clock size={16} className="animate-pulse" />
+            <span className="text-sm">3秒後に自動でスライド作成を開始します...</span>
+          </div>
+        </div>
+      )}
+
+      {/* 手動遷移オプション */}
+      {manualTriggerAvailable && onAnalysisComplete && (
+        <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
+          <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+            <Sparkles size={16} />
+            分析完了！次のステップを選択:
+          </h4>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={executeTransition}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
+            >
+              <Sparkles size={16} />
+              AIスライド作成を開始
+            </button>
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white text-sm transition-colors"
+            >
+              <Bug size={16} />
+              {showDebug ? 'デバッグ非表示' : 'デバッグ表示'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* デバッグ情報パネル */}
+      {showDebug && (
+        <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
+          <h4 className="text-gray-300 font-medium mb-2 flex items-center gap-2">
+            <Bug size={16} />
+            デバッグ情報
+          </h4>
+          <pre className="text-xs text-gray-400 overflow-x-auto">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
         </div>
       )}
 
@@ -139,7 +311,7 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
             
             {message.type === 'analysis_progress' && (
               <div className="flex items-center gap-2 text-gray-300">
-                {message.metadata.stage === 'search_complete' ? (
+                {message.metadata?.stage === 'search_complete' ? (
                   <CheckCircle size={16} className="text-green-400" />
                 ) : (
                   <Loader2 className="animate-spin" size={16} />
@@ -149,9 +321,11 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
             )}
 
             {message.type === 'analysis_complete' && (
-              <div className="flex items-center gap-2 text-green-400 font-medium">
-                <CheckCircle size={16} />
-                <span>{message.content}</span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-green-400 font-medium">
+                  <CheckCircle size={16} />
+                  <span>{message.content}</span>
+                </div>
               </div>
             )}
 
