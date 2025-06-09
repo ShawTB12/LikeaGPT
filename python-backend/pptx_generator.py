@@ -92,9 +92,15 @@ class PowerPointGenerator:
                         updated_text = self._replace_text_placeholders(original_text, replacement_map)
                         if original_text != updated_text:
                             shape.text = updated_text
-                            # テキスト色を黒、サイズを24ptに設定
-                            self._set_text_format(shape, 24)
-                            print(f"  🎯 テキスト置換完了: '{original_text}' → '{updated_text[:100]}...'")
+                            
+                            # スライド1の{企業名}は特別な設定（白色、54pt）
+                            if slide_idx == 1 and original_text.strip() == '{企業名}':
+                                self._set_text_format(shape, 54, is_white=True)
+                                print(f"  🎯 【表紙】企業名置換完了: '{original_text}' → '{updated_text[:50]}...' (白色54pt)")
+                            else:
+                                # その他は通常設定（黒色、24pt）
+                                self._set_text_format(shape, 24, is_white=False)
+                                print(f"  🎯 テキスト置換完了: '{original_text}' → '{updated_text[:100]}...'")
                 
                 # テーブルの場合（スライド4の財務データ）
                 elif shape.shape_type == MSO_SHAPE_TYPE.TABLE and slide_idx == 4:
@@ -234,21 +240,27 @@ class PowerPointGenerator:
         except Exception as e:
             print(f"⚠️ テーブル更新エラー: {str(e)}")
     
-    def _set_text_format(self, shape, font_size_pt=24):
+    def _set_text_format(self, shape, font_size_pt=24, is_white=False):
         """
-        テキストボックスの文字色を黒、文字サイズを24ptに設定
+        テキストボックスの文字色とサイズを設定
         
         Args:
             shape: python-pptxのShapeオブジェクト
             font_size_pt: フォントサイズ（ポイント）、デフォルト24pt
+            is_white: 白色テキストにするかどうか、デフォルトFalse（黒色）
         """
         try:
             if hasattr(shape, 'text_frame') and shape.text_frame:
                 for paragraph in shape.text_frame.paragraphs:
                     for run in paragraph.runs:
-                        run.font.color.rgb = RGBColor(0, 0, 0)  # 黒色
-                        run.font.size = Pt(font_size_pt)  # 24pt
-            print(f"    🎨 文字色を黒、サイズを{font_size_pt}ptに設定完了")
+                        if is_white:
+                            run.font.color.rgb = RGBColor(255, 255, 255)  # 白色
+                        else:
+                            run.font.color.rgb = RGBColor(0, 0, 0)  # 黒色
+                        run.font.size = Pt(font_size_pt)
+            
+            color_text = "白" if is_white else "黒"
+            print(f"    🎨 文字色を{color_text}、サイズを{font_size_pt}ptに設定完了")
         except Exception as e:
             print(f"    ⚠️ 文字フォーマット設定エラー: {str(e)}")
     
