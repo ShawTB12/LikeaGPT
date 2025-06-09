@@ -1080,17 +1080,6 @@ export default function Home() {
                         <h4 className="text-white font-medium mb-3">📊 分析完了 - 次のアクションを選択:</h4>
                         <div className="flex flex-wrap gap-2">
                           <button 
-                            className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
-                            onClick={() => {
-                              // スライド生成機能（既存のコードを再利用）
-                              setShowSlidePreview(true)
-                              // ストリーミング結果からスライドを生成する処理を追加
-                            }}
-                          >
-                            <Presentation size={16} />
-                            詳細スライド生成
-                          </button>
-                          <button 
                             className="flex items-center gap-2 px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white text-sm transition-colors"
                             onClick={() => {
                               // PowerPoint生成機能
@@ -1158,23 +1147,6 @@ export default function Home() {
                           >
                             <FileText size={16} />
                             PowerPoint生成
-                          </button>
-                          <button 
-                            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm transition-colors"
-                            onClick={() => {
-                              // HTMLエクスポート機能
-                              const content = streamingAnalysis.fullContent
-                              const blob = new Blob([content], { type: 'text/html' })
-                              const url = URL.createObjectURL(blob)
-                              const a = document.createElement('a')
-                              a.href = url
-                              a.download = `企業分析レポート_${new Date().toISOString().split('T')[0]}.html`
-                              a.click()
-                              URL.revokeObjectURL(url)
-                            }}
-                          >
-                            <Download size={16} />
-                            レポート出力
                           </button>
                           <button 
                             className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm transition-colors"
