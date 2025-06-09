@@ -245,31 +245,7 @@ export const StreamingAnalysis: React.FC<StreamingAnalysisProps> = ({
         </div>
       )}
 
-      {/* 手動遷移オプション */}
-      {manualTriggerAvailable && onAnalysisComplete && (
-        <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
-          <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-            <Sparkles size={16} />
-            分析完了！次のステップを選択:
-          </h4>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={executeTransition}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
-            >
-              <Sparkles size={16} />
-              AIスライド作成を開始
-            </button>
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white text-sm transition-colors"
-            >
-              <Bug size={16} />
-              {showDebug ? 'デバッグ非表示' : 'デバッグ表示'}
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* デバッグ情報パネル */}
       {showDebug && (
