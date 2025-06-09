@@ -23,6 +23,7 @@ import {
   Presentation,
   Download,
   Zap,
+  FileText,
 } from "lucide-react"
 import {
   Sidebar,
@@ -38,6 +39,7 @@ import { Button } from "@/components/ui/button"
 import { useStreamingAnalysis } from "@/hooks/useStreamingAnalysis"
 import { StreamingAnalysis } from "@/components/StreamingAnalysis"
 import { AnimatedSlideCreation } from "@/components/AnimatedSlideCreation"
+import PowerPointGenerator from "@/components/PowerPointGenerator"
 
 // Message型を定義
 interface Message {
@@ -121,6 +123,11 @@ export default function Home() {
   // アニメーションスライド作成の状態
   const [showAnimatedSlideCreation, setShowAnimatedSlideCreation] = useState(false)
   const [animatedSlideData, setAnimatedSlideData] = useState<any>(null)
+
+  // PowerPoint生成の状態
+  const [showPowerPointGenerator, setShowPowerPointGenerator] = useState(false)
+  const [powerPointAnalysisData, setPowerPointAnalysisData] = useState<any>(null)
+  const [powerPointCompanyName, setPowerPointCompanyName] = useState<string>("")
 
   const backgroundImageStyle = {
     backgroundImage: "url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop')",
@@ -863,6 +870,49 @@ export default function Home() {
     console.log('🎯 アニメーションスライドは継続表示中')
   }
 
+  // テキストからPowerPoint用データ構造を作成
+  const createAnalysisDataFromText = (text: string) => {
+    const companyName = extractCompanyName(inputValue) || "企業"
+    
+    // テキストを分析してセクションに分割
+    const sections = text.split(/\n\s*\n/).filter(section => section.trim().length > 0)
+    
+    return {
+      slide1: {
+        企業名: companyName
+      },
+      slide3: {
+        企業概要: sections[0] || `${companyName}に関する基本的な企業情報と事業概要。業界での地位と主要な事業領域について説明します。`,
+        競合比較: sections[1] || `${companyName}の競合他社との比較分析。市場シェア、強み、差別化要因について詳細に分析します。`,
+        重要課題: sections[2] || `${companyName}が直面している主要な課題と今後の戦略的な取り組みについて説明します。`
+      },
+      slide4: {
+        売上構造: sections[3] || `${companyName}の収益構造と主要事業セグメントの分析。各事業の貢献度と成長性について説明します。`,
+        財務分析サマリ: sections[4] || `${companyName}の財務状況の概要。収益性、安全性、成長性の観点から分析します。`,
+        売上高: "データ分析中",
+        営業利益: "データ分析中",
+        自己資本比率: "データ分析中"
+      },
+      slide5: {
+        強み: sections[5] || `${companyName}の競争優位性と市場での強みについて分析します。`,
+        弱み: sections[6] || `${companyName}の改善すべき点と課題について説明します。`,
+        機会: sections[7] || `${companyName}にとっての市場機会と成長可能性について分析します。`,
+        技術革新: sections[8] || `${companyName}の技術革新への取り組みと今後の展望について説明します。`
+      },
+      slide6: {
+        "最新ニュース①": "最新の企業動向と市場での注目すべき出来事について説明します。",
+        "最新ニュース②": "事業展開や新商品・サービスに関する最新情報をお伝えします。",
+        "最新ニュース③": "投資家や市場関係者が注目する最新のニュースと分析をご紹介します。"
+      },
+      slide7: {
+        財務課題: `${companyName}の財務面での課題と改善策について分析します。`,
+        業界課題: `${companyName}が属する業界全体の課題と対応策について説明します。`,
+        顧客ビジョン: `${companyName}の顧客に対するビジョンと価値提供について説明します。`,
+        顧客課題: `${companyName}の顧客が抱える課題とそれに対するソリューションについて分析します。`
+      }
+    }
+  }
+
   return (
     <SidebarProvider defaultOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <div 
@@ -931,7 +981,7 @@ export default function Home() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className={`flex-1 w-full min-w-0 flex flex-col transition-all duration-300 ease-in-out bg-neutral-900/80 backdrop-blur-lg text-gray-100 ${showSlidePreview || showAnimatedSlideCreation ? 'mr-[65%]' : ''}`}>
+        <main className={`flex-1 w-full min-w-0 flex flex-col transition-all duration-300 ease-in-out bg-neutral-900/80 backdrop-blur-lg text-gray-100 ${showSlidePreview || showAnimatedSlideCreation || showPowerPointGenerator ? 'mr-[65%]' : ''}`}>
           <header className="bg-neutral-900/60 backdrop-blur-lg p-4 flex items-center justify-between sticky top-0 z-10 border-b border-neutral-700/50 text-gray-100">
             <div className="flex items-center space-x-3">
               <button className="p-2 rounded-md hover:bg-neutral-700/60" onClick={toggleSidebar}>
@@ -997,6 +1047,42 @@ export default function Home() {
                           >
                             <Presentation size={16} />
                             詳細スライド生成
+                          </button>
+                          <button 
+                            className="flex items-center gap-2 px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white text-sm transition-colors"
+                            onClick={() => {
+                              // PowerPoint生成機能
+                              if (streamingAnalysis.fullContent) {
+                                try {
+                                  // ストリーミング結果をPowerPoint用データに変換
+                                  console.log('ストリーミングデータ:', streamingAnalysis.fullContent)
+                                  
+                                  // JSONパースを試みる
+                                  let analysisData
+                                  try {
+                                    analysisData = JSON.parse(streamingAnalysis.fullContent)
+                                  } catch (parseError) {
+                                    // パースに失敗した場合は、テキストから基本的なデータ構造を作成
+                                    console.log('JSON解析失敗、テキストからデータを作成します')
+                                    analysisData = createAnalysisDataFromText(streamingAnalysis.fullContent)
+                                  }
+                                  
+                                  setPowerPointAnalysisData(analysisData)
+                                  setPowerPointCompanyName(extractCompanyName(inputValue) || "企業")
+                                  setShowPowerPointGenerator(true)
+                                } catch (error) {
+                                  console.error('分析データの処理エラー:', error)
+                                  // エラー時もテキストからデータを作成
+                                  const fallbackData = createAnalysisDataFromText(streamingAnalysis.fullContent || "分析データなし")
+                                  setPowerPointAnalysisData(fallbackData)
+                                  setPowerPointCompanyName(extractCompanyName(inputValue) || "企業")
+                                  setShowPowerPointGenerator(true)
+                                }
+                              }
+                            }}
+                          >
+                            <FileText size={16} />
+                            PowerPoint生成
                           </button>
                           <button 
                             className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm transition-colors"
@@ -1121,7 +1207,7 @@ export default function Home() {
         )}
 
         {/* 右側スライドプレビューエリア */}
-        {(showSlidePreview || showAnimatedSlideCreation) && (
+        {(showSlidePreview || showAnimatedSlideCreation || showPowerPointGenerator) && (
           <div className="fixed top-0 right-0 w-[65%] h-full bg-neutral-900/95 backdrop-blur-lg border-l border-neutral-700/50 z-30">
             {/* ヘッダー */}
             <div className="bg-neutral-800/80 backdrop-blur-lg p-4 border-b border-neutral-700/50">
@@ -1131,6 +1217,8 @@ export default function Home() {
                   <h2 className="text-lg font-semibold text-white">
                     {showAnimatedSlideCreation 
                       ? `${animatedSlideData?.companyName || '企業'} スライド生成中...`
+                      : showPowerPointGenerator
+                      ? `${powerPointCompanyName} PowerPoint生成`
                       : `${slidePreviewData.analysisData?.companyName || '企業分析'} プレゼンテーション`
                     }
                   </h2>
@@ -1145,6 +1233,7 @@ export default function Home() {
                     onClick={() => {
                       setShowSlidePreview(false)
                       setShowAnimatedSlideCreation(false)
+                      setShowPowerPointGenerator(false)
                     }}
                     className="p-2 hover:bg-neutral-700 rounded-lg transition-colors text-gray-400"
                   >
@@ -1156,9 +1245,14 @@ export default function Home() {
               {/* タブ */}
               <div className="flex gap-4 mt-4">
                 <button className="px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm">
-                  {showAnimatedSlideCreation ? 'ライブ生成' : 'プレビュー'}
+                  {showAnimatedSlideCreation 
+                    ? 'ライブ生成' 
+                    : showPowerPointGenerator 
+                    ? 'PowerPoint生成'
+                    : 'プレビュー'
+                  }
                 </button>
-                {!showAnimatedSlideCreation && (
+                {!showAnimatedSlideCreation && !showPowerPointGenerator && (
                   <>
                     <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
                       コード
@@ -1180,6 +1274,15 @@ export default function Home() {
                     analysisData={animatedSlideData}
                     isVisible={showAnimatedSlideCreation}
                     onComplete={handleAnimatedSlideComplete}
+                  />
+                </div>
+              ) : showPowerPointGenerator ? (
+                // PowerPoint生成表示
+                <div className="p-4 h-full overflow-y-auto">
+                  <PowerPointGenerator
+                    analysisData={powerPointAnalysisData}
+                    companyName={powerPointCompanyName}
+                    isVisible={showPowerPointGenerator}
                   />
                 </div>
               ) : slidePreviewData.generationProgress === 0 ? (
