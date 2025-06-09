@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Python backend のURL
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:5001'
+const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 
+  process.env.PYTHON_SERVICE_URL || 
+  'http://localhost:5001'
 
 export async function GET(
   request: NextRequest,

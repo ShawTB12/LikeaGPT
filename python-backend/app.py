@@ -17,7 +17,7 @@ import shutil
 
 # Flask アプリケーション初期化
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000", "https://central-agent.vercel.app", "https://*.vercel.app"])  # Next.js フロントエンドからのアクセスを許可
+CORS(app, origins=["http://localhost:3000", "https://*.railway.app", "https://*.vercel.app"])  # フロントエンドからのアクセスを許可
 
 # 設定
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size

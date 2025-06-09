@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
-// Python backend のURL（環境変数または固定値）
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:5001'
+// Python backend のURL（Railway内部通信またはローカル開発）
+const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 
+  process.env.PYTHON_SERVICE_URL || 
+  'http://localhost:5001'
 
 export async function POST(request: NextRequest) {
   try {
