@@ -12,6 +12,7 @@ from datetime import datetime
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.dml.color import RGBColor
+from pptx.util import Pt
 import tempfile
 import shutil
 
@@ -91,8 +92,8 @@ class PowerPointGenerator:
                         updated_text = self._replace_text_placeholders(original_text, replacement_map)
                         if original_text != updated_text:
                             shape.text = updated_text
-                            # テキスト色を黒に設定
-                            self._set_text_color_to_black(shape)
+                            # テキスト色を黒、サイズを24ptに設定
+                            self._set_text_format(shape, 24)
                             print(f"  🎯 テキスト置換完了: '{original_text}' → '{updated_text[:100]}...'")
                 
                 # テーブルの場合（スライド4の財務データ）
@@ -213,57 +214,61 @@ class PowerPointGenerator:
                 if len(table.rows) > 0 and len(table.rows[0].cells) > 1:
                     cell = table.cell(0, 1)
                     cell.text = slide4.get('売上高', 'データなし')
-                    self._set_cell_text_color_to_black(cell)
+                    self._set_cell_text_format(cell, 24)
                     print(f"  💰 売上高更新: {slide4.get('売上高', 'データなし')}")
                 
                 # セル[1,1]: 営業利益  
                 if len(table.rows) > 1 and len(table.rows[1].cells) > 1:
                     cell = table.cell(1, 1)
                     cell.text = slide4.get('営業利益', 'データなし')
-                    self._set_cell_text_color_to_black(cell)
+                    self._set_cell_text_format(cell, 24)
                     print(f"  📈 営業利益更新: {slide4.get('営業利益', 'データなし')}")
                 
                 # セル[2,1]: 自己資本比率
                 if len(table.rows) > 2 and len(table.rows[2].cells) > 1:
                     cell = table.cell(2, 1)
                     cell.text = slide4.get('自己資本比率', 'データなし')
-                    self._set_cell_text_color_to_black(cell)
+                    self._set_cell_text_format(cell, 24)
                     print(f"  🏦 自己資本比率更新: {slide4.get('自己資本比率', 'データなし')}")
                     
         except Exception as e:
             print(f"⚠️ テーブル更新エラー: {str(e)}")
     
-    def _set_text_color_to_black(self, shape):
+    def _set_text_format(self, shape, font_size_pt=24):
         """
-        テキストボックスの文字色を黒に設定
+        テキストボックスの文字色を黒、文字サイズを24ptに設定
         
         Args:
             shape: python-pptxのShapeオブジェクト
+            font_size_pt: フォントサイズ（ポイント）、デフォルト24pt
         """
         try:
             if hasattr(shape, 'text_frame') and shape.text_frame:
                 for paragraph in shape.text_frame.paragraphs:
                     for run in paragraph.runs:
                         run.font.color.rgb = RGBColor(0, 0, 0)  # 黒色
-            print(f"    🎨 文字色を黒に設定完了")
+                        run.font.size = Pt(font_size_pt)  # 24pt
+            print(f"    🎨 文字色を黒、サイズを{font_size_pt}ptに設定完了")
         except Exception as e:
-            print(f"    ⚠️ 文字色設定エラー: {str(e)}")
+            print(f"    ⚠️ 文字フォーマット設定エラー: {str(e)}")
     
-    def _set_cell_text_color_to_black(self, cell):
+    def _set_cell_text_format(self, cell, font_size_pt=24):
         """
-        テーブルセルの文字色を黒に設定
+        テーブルセルの文字色を黒、文字サイズを24ptに設定
         
         Args:
             cell: python-pptxのCellオブジェクト
+            font_size_pt: フォントサイズ（ポイント）、デフォルト24pt
         """
         try:
             if hasattr(cell, 'text_frame') and cell.text_frame:
                 for paragraph in cell.text_frame.paragraphs:
                     for run in paragraph.runs:
                         run.font.color.rgb = RGBColor(0, 0, 0)  # 黒色
-            print(f"    🎨 テーブルセル文字色を黒に設定完了")
+                        run.font.size = Pt(font_size_pt)  # 24pt
+            print(f"    🎨 テーブルセル文字色を黒、サイズを{font_size_pt}ptに設定完了")
         except Exception as e:
-            print(f"    ⚠️ テーブルセル文字色設定エラー: {str(e)}")
+            print(f"    ⚠️ テーブルセル文字フォーマット設定エラー: {str(e)}")
     
     def cleanup(self):
         """一時ファイルのクリーンアップ"""
