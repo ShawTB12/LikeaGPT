@@ -17,7 +17,7 @@ import shutil
 
 # Flask アプリケーション初期化
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000"])  # Next.js フロントエンドからのアクセスを許可
+CORS(app, origins=["http://localhost:3000", "https://central-agent.vercel.app", "https://*.vercel.app"])  # Next.js フロントエンドからのアクセスを許可
 
 # 設定
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
@@ -303,9 +303,11 @@ import atexit
 atexit.register(cleanup_all_files)
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5001))
     print("🚀 PowerPoint生成APIサーバー起動中...")
     print(f"📄 テンプレートファイル: {TEMPLATE_PATH}")
-    print(f"🌐 CORS許可オリジン: http://localhost:3000")
+    print(f"🌐 ポート: {port}")
+    print(f"🔗 CORS許可オリジン: http://localhost:3000, https://*.vercel.app")
     print("📡 利用可能エンドポイント:")
     print("  GET  /health - ヘルスチェック")
     print("  POST /generate-powerpoint - PowerPoint生成")
@@ -313,10 +315,10 @@ if __name__ == '__main__':
     print("  DELETE /cleanup/<file_id> - ファイルクリーンアップ")
     print("  GET  /list-files - 生成ファイル一覧")
     
-    # デバッグモードで起動（本番では False に変更）
+    # 本番環境用設定
     app.run(
         host='0.0.0.0',
-        port=5001,
-        debug=True,
+        port=port,
+        debug=False,
         threaded=True
     ) 
