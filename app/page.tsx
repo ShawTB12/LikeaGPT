@@ -10,7 +10,6 @@ import {
   Search,
   Settings,
   Menu,
-  Pause,
   Sparkles,
   X,
   Send,
@@ -98,8 +97,6 @@ interface ChartData {
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false)
-  const [showAIPopup, setShowAIPopup] = useState(false)
-  const [typedText, setTypedText] = useState("")
   const [isPlaying, setIsPlaying] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
@@ -138,32 +135,9 @@ export default function Home() {
 
   useEffect(() => {
     setIsLoaded(true)
-
-    // Show AI popup after 3 seconds
-    const popupTimer = setTimeout(() => {
-      setShowAIPopup(true)
-    }, 3000)
-
-    return () => clearTimeout(popupTimer)
   }, [])
 
-  useEffect(() => {
-    if (showAIPopup) {
-      const text =
-        "LLooks like you don't have that many meetings today. Shall I play some Hans Zimmer essentials to help you get into your Flow State?"
-      let i = 0
-      const typingInterval = setInterval(() => {
-        if (i < text.length) {
-          setTypedText((prev) => prev + text.charAt(i))
-          i++
-        } else {
-          clearInterval(typingInterval)
-        }
-      }, 50)
 
-      return () => clearInterval(typingInterval)
-    }
-  }, [showAIPopup])
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -1273,39 +1247,7 @@ export default function Home() {
           </div>
         </main>
 
-        {showAIPopup && (
-          <div className="absolute bottom-24 right-6 bg-popover/70 backdrop-blur-xl p-6 rounded-xl shadow-2xl max-w-md z-20 border border-border/40 text-foreground">
-              <button
-                onClick={() => setShowAIPopup(false)}
-              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
-              >
-              <X size={18} />
-              </button>
-            <div className="flex items-start space-x-3">
-              <Sparkles size={24} className="text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm mb-4 leading-relaxed">
-                  {typedText}
-                </p>
-                <div className="flex items-center justify-end space-x-2.5">
-                <button
-                  onClick={togglePlay}
-                    className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary/80 rounded-lg text-sm font-medium transition-colors text-primary-foreground"
-                >
-                    {isPlaying ? <Pause size={16} /> : <Sparkles size={16} />}
-                    <span>{isPlaying ? "Pause" : "Play Music"}</span>
-                </button>
-                <button
-                  onClick={() => setShowAIPopup(false)}
-                    className="px-4 py-2 bg-secondary/70 hover:bg-secondary rounded-lg text-sm font-medium transition-colors text-secondary-foreground"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* 右側スライドプレビューエリア */}
         {(showSlidePreview || showAnimatedSlideCreation || showPowerPointGenerator) && (
