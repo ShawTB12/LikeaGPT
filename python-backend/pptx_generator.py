@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.dml.color import RGBColor
 import tempfile
 import shutil
 
@@ -81,14 +82,18 @@ class PowerPointGenerator:
             print(f"📝 スライド {slide_idx} を処理中...")
             
             # 各図形を処理
-            for shape in slide.shapes:
+            for shape_idx, shape in enumerate(slide.shapes):
                 # テキストボックスの場合
                 if hasattr(shape, 'text'):
-                    original_text = shape.text
-                    updated_text = self._replace_text_placeholders(original_text, replacement_map)
-                    if original_text != updated_text:
-                        shape.text = updated_text
-                        print(f"  🎯 テキスト置換: {original_text[:50]}... → {updated_text[:50]}...")
+                    original_text = shape.text.strip()
+                    if original_text:  # 空のテキストボックスは無視
+                        print(f"  📄 Shape{shape_idx}: '{original_text}'")
+                        updated_text = self._replace_text_placeholders(original_text, replacement_map)
+                        if original_text != updated_text:
+                            shape.text = updated_text
+                            # テキスト色を黒に設定
+                            self._set_text_color_to_black(shape)
+                            print(f"  🎯 テキスト置換完了: '{original_text}' → '{updated_text[:100]}...'")
                 
                 # テーブルの場合（スライド4の財務データ）
                 elif shape.shape_type == MSO_SHAPE_TYPE.TABLE and slide_idx == 4:
@@ -176,10 +181,18 @@ class PowerPointGenerator:
         Returns:
             str: 置換後のテキスト
         """
+        # プレースホルダー以外のテキストは置換しない
+        # {プレースホルダー}形式のみを対象とする
         updated_text = text
+        
+        # 厳密なプレースホルダーマッチングで置換
         for placeholder, value in replacement_map.items():
-            if placeholder in updated_text:
-                updated_text = updated_text.replace(placeholder, str(value))
+            # プレースホルダーが完全に一致する場合のみ置換
+            if text.strip() == placeholder:
+                updated_text = str(value)
+                print(f"    ✅ 完全一致置換: {placeholder} → {str(value)[:50]}...")
+                break
+        
         return updated_text
     
     def _update_financial_table(self, table, analysis_data):
@@ -198,21 +211,59 @@ class PowerPointGenerator:
                 
                 # セル[0,1]: 売上高
                 if len(table.rows) > 0 and len(table.rows[0].cells) > 1:
-                    table.cell(0, 1).text = slide4.get('売上高', 'データなし')
+                    cell = table.cell(0, 1)
+                    cell.text = slide4.get('売上高', 'データなし')
+                    self._set_cell_text_color_to_black(cell)
                     print(f"  💰 売上高更新: {slide4.get('売上高', 'データなし')}")
                 
                 # セル[1,1]: 営業利益  
                 if len(table.rows) > 1 and len(table.rows[1].cells) > 1:
-                    table.cell(1, 1).text = slide4.get('営業利益', 'データなし')
+                    cell = table.cell(1, 1)
+                    cell.text = slide4.get('営業利益', 'データなし')
+                    self._set_cell_text_color_to_black(cell)
                     print(f"  📈 営業利益更新: {slide4.get('営業利益', 'データなし')}")
                 
                 # セル[2,1]: 自己資本比率
                 if len(table.rows) > 2 and len(table.rows[2].cells) > 1:
-                    table.cell(2, 1).text = slide4.get('自己資本比率', 'データなし')
+                    cell = table.cell(2, 1)
+                    cell.text = slide4.get('自己資本比率', 'データなし')
+                    self._set_cell_text_color_to_black(cell)
                     print(f"  🏦 自己資本比率更新: {slide4.get('自己資本比率', 'データなし')}")
                     
         except Exception as e:
             print(f"⚠️ テーブル更新エラー: {str(e)}")
+    
+    def _set_text_color_to_black(self, shape):
+        """
+        テキストボックスの文字色を黒に設定
+        
+        Args:
+            shape: python-pptxのShapeオブジェクト
+        """
+        try:
+            if hasattr(shape, 'text_frame') and shape.text_frame:
+                for paragraph in shape.text_frame.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.color.rgb = RGBColor(0, 0, 0)  # 黒色
+            print(f"    🎨 文字色を黒に設定完了")
+        except Exception as e:
+            print(f"    ⚠️ 文字色設定エラー: {str(e)}")
+    
+    def _set_cell_text_color_to_black(self, cell):
+        """
+        テーブルセルの文字色を黒に設定
+        
+        Args:
+            cell: python-pptxのCellオブジェクト
+        """
+        try:
+            if hasattr(cell, 'text_frame') and cell.text_frame:
+                for paragraph in cell.text_frame.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.color.rgb = RGBColor(0, 0, 0)  # 黒色
+            print(f"    🎨 テーブルセル文字色を黒に設定完了")
+        except Exception as e:
+            print(f"    ⚠️ テーブルセル文字色設定エラー: {str(e)}")
     
     def cleanup(self):
         """一時ファイルのクリーンアップ"""

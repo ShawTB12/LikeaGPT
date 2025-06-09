@@ -99,6 +99,23 @@ def generate_powerpoint():
         print(f"📊 企業名: {company_name}")
         print(f"📋 分析データ: {len(analysis_data)} スライド")
         
+        # デバッグ: 受信したデータを詳細にログ出力
+        print(f"🔍 === 受信データ詳細分析 ===")
+        print(f"📋 analysis_data type: {type(analysis_data)}")
+        print(f"📋 analysis_data keys: {list(analysis_data.keys()) if isinstance(analysis_data, dict) else 'Not a dict'}")
+        
+        if isinstance(analysis_data, dict):
+            for key, value in analysis_data.items():
+                if isinstance(value, dict):
+                    print(f"  {key}: {list(value.keys())}")
+                    for sub_key, sub_value in value.items():
+                        print(f"    {sub_key}: {str(sub_value)[:150]}{'...' if len(str(sub_value)) > 150 else ''}")
+                else:
+                    print(f"  {key}: {type(value)} - {str(value)[:150]}{'...' if len(str(value)) > 150 else ''}")
+        else:
+            print(f"📋 analysis_data content: {str(analysis_data)[:300]}{'...' if len(str(analysis_data)) > 300 else ''}")
+        print(f"🔍 === デバッグ終了 ===\n")
+        
         # PowerPoint生成
         generator = PowerPointGenerator(TEMPLATE_PATH)
         
