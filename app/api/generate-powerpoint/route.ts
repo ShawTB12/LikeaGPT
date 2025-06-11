@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import axios from 'axios'
 
 // Python backend のURL（Railway内部通信またはローカル開発）
 const PYTHON_BACKEND_URL = process.env.BACKEND_URL || 
@@ -39,30 +40,28 @@ export async function POST(request: NextRequest) {
       PYTHON_SERVICE_URL: process.env.PYTHON_SERVICE_URL
     })
     
-    const pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/generate-powerpoint`, {
-      method: 'POST',
+    const pythonResponse = await axios.post(`${PYTHON_BACKEND_URL}/generate-powerpoint`, body, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
-      // @ts-ignore
-      family: 4, // IPv4を強制
+      timeout: 30000,
+      // IPv4を強制
+      family: 4,
     })
 
-    if (!pythonResponse.ok) {
-      const errorData = await pythonResponse.json().catch(() => ({}))
-      console.error('❌ Python backend エラー:', errorData)
+    if (pythonResponse.status !== 200) {
+      console.error('❌ Python backend エラー:', pythonResponse.data)
       
       return NextResponse.json(
         { 
-          error: `PowerPoint生成エラー: ${errorData.error || 'Unknown error'}`,
-          details: errorData
+          error: `PowerPoint生成エラー: ${pythonResponse.data?.error || 'Unknown error'}`,
+          details: pythonResponse.data
         },
         { status: pythonResponse.status }
       )
     }
 
-    const result = await pythonResponse.json()
+    const result = pythonResponse.data
     console.log('✅ PowerPoint生成成功:', result.file_id)
 
     // Next.js 側のダウンロードURLを作成
@@ -93,11 +92,12 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Python backend のヘルスチェック
-    const healthResponse = await fetch(`${PYTHON_BACKEND_URL}/health`, {
-      method: 'GET',
+    const healthResponse = await axios.get(`${PYTHON_BACKEND_URL}/health`, {
+      timeout: 10000,
+      family: 4, // IPv4を強制
     })
 
-    if (!healthResponse.ok) {
+    if (healthResponse.status !== 200) {
       return NextResponse.json(
         { 
           error: 'Python backend に接続できません',
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const healthData = await healthResponse.json()
+    const healthData = healthResponse.data
 
     return NextResponse.json({
       status: 'healthy',
