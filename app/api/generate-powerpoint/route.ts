@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import axios from 'axios'
 
-// Python backend のURL（Railway内部通信またはローカル開発）
-const PYTHON_BACKEND_URL = process.env.BACKEND_URL || 
-  process.env.PYTHON_BACKEND_URL || 
-  process.env.PYTHON_SERVICE_URL || 
+// Python backend のURL
+// 1. 環境変数 `PYTHON_BACKEND_URL` または `PYTHON_SERVICE_URL` が設定されていればそちらを使用
+// 2. それ以外はローカル開発用に `http://localhost:5001` をデフォルトとする
+//    ※ Railway では "python-backend" というサービス名を付与している場合、
+//       `http://python-backend:5001` のような内部ドメインを環境変数に設定してください
+const PYTHON_BACKEND_URL =
+  process.env.PYTHON_BACKEND_URL ||
+  process.env.PYTHON_SERVICE_URL ||
   'http://localhost:5001'
 
 export async function POST(request: NextRequest) {
