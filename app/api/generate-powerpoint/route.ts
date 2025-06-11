@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       timeout: 30000,
+      // IPv4優先で接続（IPv6が拒否されるRailway内部DNS対策）
+      family: 4,
     })
 
     if (pythonResponse.status !== 200) {
@@ -97,6 +99,7 @@ export async function GET(request: NextRequest) {
     // Python backend のヘルスチェック
     const healthResponse = await axios.get(`${PYTHON_BACKEND_URL}/health`, {
       timeout: 10000,
+      family: 4,
     })
 
     if (healthResponse.status !== 200) {
