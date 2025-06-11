@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
 // Python backend のURL（Railway内部通信またはローカル開発）
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 
+const PYTHON_BACKEND_URL = process.env.BACKEND_URL || 
+  process.env.PYTHON_BACKEND_URL || 
   process.env.PYTHON_SERVICE_URL || 
   'http://localhost:5001'
 
