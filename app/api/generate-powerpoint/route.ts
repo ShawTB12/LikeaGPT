@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      // @ts-ignore
+      family: 4, // IPv4を強制
     })
 
     if (!pythonResponse.ok) {
