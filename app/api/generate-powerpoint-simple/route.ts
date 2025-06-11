@@ -49,56 +49,56 @@ function generateTextReport(companyName: string, analysisData: any): string {
 生成日時: ${timestamp}
 
 ## 企業概要
-${analysisData.slide3?.企業概要 || 'データなし'}
+${analysisData.slide3?.['企業概要'] || 'データなし'}
 
 ## 競合比較  
-${analysisData.slide3?.競合比較 || 'データなし'}
+${analysisData.slide3?.['競合比較'] || 'データなし'}
 
 ## 重要課題
-${analysisData.slide3?.重要課題 || 'データなし'}
+${analysisData.slide3?.['重要課題'] || 'データなし'}
 
 ## 財務分析
 ### 売上構造
-${analysisData.slide4?.売上構造 || 'データなし'}
+${analysisData.slide4?.['売上構造'] || 'データなし'}
 
 ### 財務サマリ
-${analysisData.slide4?.財務分析サマリ || 'データなし'}
+${analysisData.slide4?.['財務分析サマリ'] || 'データなし'}
 
 ## SWOT分析
 ### 強み
-${analysisData.slide5?.強み || 'データなし'}
+${analysisData.slide5?.['強み'] || 'データなし'}
 
 ### 弱み  
-${analysisData.slide5?.弱み || 'データなし'}
+${analysisData.slide5?.['弱み'] || 'データなし'}
 
 ### 機会
-${analysisData.slide5?.機会 || 'データなし'}
+${analysisData.slide5?.['機会'] || 'データなし'}
 
 ### 技術革新
-${analysisData.slide5?.技術革新 || 'データなし'}
+${analysisData.slide5?.['技術革新'] || 'データなし'}
 
 ## 最新動向
 ### ニュース①
-${analysisData.slide6?.最新ニュース① || 'データなし'}
+${analysisData.slide6?.['最新ニュース①'] || 'データなし'}
 
 ### ニュース②
-${analysisData.slide6?.最新ニュース② || 'データなし'}
+${analysisData.slide6?.['最新ニュース②'] || 'データなし'}
 
 ### ニュース③ 
-${analysisData.slide6?.最新ニュース③ || 'データなし'}
+${analysisData.slide6?.['最新ニュース③'] || 'データなし'}
 
 ## 顧客課題分析
 ### 財務課題
-${analysisData.slide7?.財務課題 || 'データなし'}
+${analysisData.slide7?.['財務課題'] || 'データなし'}
 
 ### 業界課題
-${analysisData.slide7?.業界課題 || 'データなし'}
+${analysisData.slide7?.['業界課題'] || 'データなし'}
 
 ### 顧客ビジョン
-${analysisData.slide7?.顧客ビジョン || 'データなし'}
+${analysisData.slide7?.['顧客ビジョン'] || 'データなし'}
 
 ### 顧客課題
-${analysisData.slide7?.顧客課題 || 'データなし'}
+${analysisData.slide7?.['顧客課題'] || 'データなし'}
 
 ---
 本レポートは AI による企業分析結果です。

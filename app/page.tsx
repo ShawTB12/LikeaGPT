@@ -870,7 +870,7 @@ export default function Home() {
         return parsed
       }
     } catch (e) {
-      console.log('⚠️ JSON解析失敗、テキスト解析にフォールバック', e.message)
+      console.log('⚠️ JSON解析失敗、テキスト解析にフォールバック', e instanceof Error ? e.message : String(e))
     }
     
     // JSONパースに失敗した場合、テキストを詳細に解析
@@ -1127,7 +1127,7 @@ export default function Home() {
                                       throw new Error('Invalid JSON structure')
                                     }
                                   } catch (parseError) {
-                                    console.log('⚠️ JSON解析失敗、テキスト解析実行', parseError.message)
+                                    console.log('⚠️ JSON解析失敗、テキスト解析実行', parseError instanceof Error ? parseError.message : String(parseError))
                                     analysisData = createAnalysisDataFromText(streamingAnalysis.fullContent)
                                   }
                                   
