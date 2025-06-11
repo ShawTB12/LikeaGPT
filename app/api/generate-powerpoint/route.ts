@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     console.log('🔄 Python backendにリクエスト転送中...')
     console.log('🔗 使用URL:', PYTHON_BACKEND_URL)
     console.log('🔍 環境変数チェック:', {
+      BACKEND_URL: process.env.BACKEND_URL,
       PYTHON_BACKEND_URL: process.env.PYTHON_BACKEND_URL,
       PYTHON_SERVICE_URL: process.env.PYTHON_SERVICE_URL
     })
@@ -45,8 +46,6 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       timeout: 30000,
-      // IPv4を強制
-      family: 4,
     })
 
     if (pythonResponse.status !== 200) {
@@ -94,7 +93,6 @@ export async function GET(request: NextRequest) {
     // Python backend のヘルスチェック
     const healthResponse = await axios.get(`${PYTHON_BACKEND_URL}/health`, {
       timeout: 10000,
-      family: 4, // IPv4を強制
     })
 
     if (healthResponse.status !== 200) {
