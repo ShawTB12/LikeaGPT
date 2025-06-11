@@ -1,11 +1,12 @@
 [phases.setup]
-npmOverride = true
+# Node.js と pnpm を有効化
+pkgs = ["nodejs", "corepack"]
 
 [phases.install]
-cmd = "npm ci"
+cmd = "corepack enable && pnpm install --frozen-lockfile"
 
 [phases.build]
-cmd = "npm run build"
+cmd = "pnpm run build"
 
 [start]
-cmd = "npm start" 
+cmd = "pnpm start" 
