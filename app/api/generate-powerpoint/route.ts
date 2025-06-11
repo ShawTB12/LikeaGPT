@@ -32,6 +32,11 @@ export async function POST(request: NextRequest) {
 
     // Python backend にリクエストを転送
     console.log('🔄 Python backendにリクエスト転送中...')
+    console.log('🔗 使用URL:', PYTHON_BACKEND_URL)
+    console.log('🔍 環境変数チェック:', {
+      PYTHON_BACKEND_URL: process.env.PYTHON_BACKEND_URL,
+      PYTHON_SERVICE_URL: process.env.PYTHON_SERVICE_URL
+    })
     
     const pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/generate-powerpoint`, {
       method: 'POST',
