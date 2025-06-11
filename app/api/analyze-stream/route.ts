@@ -2,9 +2,8 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { searchWithTavily, searchWithDuckDuckGo } from '@/lib/web-search'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+// Anthropic クライアントは関数内で初期化（サーバーレス環境対応）
+let anthropic: Anthropic
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +14,20 @@ export async function POST(request: NextRequest) {
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'ANTHROPIC_API_KEY 環境変数が設定されていません' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    // Anthropic クライアントを初期化
+    try {
+      anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      })
+      console.log('✅ Anthropic クライアント初期化成功')
+    } catch (initError) {
+      console.error('❌ Anthropic クライアント初期化失敗:', initError)
+      return new Response(
+        JSON.stringify({ error: `Anthropic クライアント初期化失敗: ${initError instanceof Error ? initError.message : String(initError)}` }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
