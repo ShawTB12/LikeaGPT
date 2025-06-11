@@ -8,6 +8,17 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
+    // デバッグ: 環境変数の確認
+    console.log('🔍 ANTHROPIC_API_KEY status:', process.env.ANTHROPIC_API_KEY ? 'Set' : 'NOT SET')
+    console.log('🔍 API Key prefix:', process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 15) + '...' : 'MISSING')
+    
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'ANTHROPIC_API_KEY 環境変数が設定されていません' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+    
     const { companyName } = await request.json()
 
     if (!companyName) {
