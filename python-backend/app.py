@@ -21,7 +21,7 @@ CORS(app, origins=["http://localhost:3000", "https://*.railway.app", "https://*.
 
 # 設定
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
-TEMPLATE_PATH = "../public/Central_Analysis.pptx"
+TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "Central_Analysis.pptx")
 
 # グローバル変数
 generated_files = {}  # 生成されたファイルの一時保存
