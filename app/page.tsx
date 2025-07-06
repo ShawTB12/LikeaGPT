@@ -19,6 +19,7 @@ import {
   HelpCircle,
   History,
   PanelLeft,
+  LogIn,
 } from "lucide-react"
 import {
   Sidebar,
@@ -168,6 +169,11 @@ export default function Home() {
             <button className="p-2 rounded-full hover:bg-neutral-700/60 transition-colors">
               <Settings size={20} />
             </button>
+            <Link href="/login">
+              <Button variant="ghost" size="icon" className="p-2 rounded-full hover:bg-neutral-700/60 transition-colors">
+                <LogIn size={20} />
+              </Button>
+            </Link>
             <Image src="/placeholder.svg" alt="User Avatar" width={32} height={32} className="rounded-full" />
           </div>
         </header>
