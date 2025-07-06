@@ -51,7 +51,7 @@ export default function LoginPage() {
       </div>
 
       {/* メインコンテンツ */}
-      <div className="relative z-10 w-full max-w-md px-8">
+      <div className="relative z-10 w-full max-w-2xl px-8">
         {/* ロゴ（鼓動エフェクト付き） */}
         <div className={`text-center mb-12 transition-all duration-2000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="relative inline-block">
@@ -59,13 +59,13 @@ export default function LoginPage() {
               <Image
                 src="/BizBrain_logo.png"
                 alt="BizBrain"
-                width={120}
-                height={120}
+                width={160}
+                height={160}
                 className="mx-auto mb-6 logo-glow"
                 priority
               />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
               BizBrain
             </h1>
             <p className="text-gray-400 text-sm font-light">
@@ -75,13 +75,13 @@ export default function LoginPage() {
         </div>
 
         {/* ログインフォーム */}
-        <div className={`bg-black/40 backdrop-blur-lg border border-purple-500/20 rounded-2xl p-8 shadow-2xl transition-all duration-2000 delay-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-2">ログイン</h2>
+        <div className={`bg-black/40 backdrop-blur-lg border border-purple-500/20 rounded-2xl p-10 shadow-2xl transition-all duration-2000 delay-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-semibold text-white mb-2">ログイン</h2>
             <p className="text-gray-400 text-sm">アカウントにアクセスしてください</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6 max-w-lg mx-auto">
             {/* メールアドレス */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
