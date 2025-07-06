@@ -97,7 +97,7 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <Sparkles className="text-purple-400" size={24} />
                 <p className="whitespace-nowrap text-lg font-semibold tracking-tight text-gray-50">
-                  Central Agent
+                  BizBrain
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -208,7 +208,7 @@ export default function Home() {
             </button>
           </div>
           <p className="text-xs text-gray-400 text-center mt-2">
-            Central Agent may display inaccurate info, including about people, so double-check its responses. Your privacy & Central Agent Apps
+            BizBrain may display inaccurate info, including about people, so double-check its responses. Your privacy & BizBrain Apps
           </p>
         </div>
       </main>

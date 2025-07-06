@@ -1,4 +1,4 @@
-# Central Agent UI
+# BizBrain UI
 
 シンプルで美しいチャットUIアプリケーション
 
@@ -19,8 +19,8 @@
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/ShawTB12/CentralAgent.git
-cd CentralAgent
+git clone https://github.com/ShawTB12/BizBrain.git
+cd BizBrain
 ```
 
 ### 2. 依存関係のインストール
