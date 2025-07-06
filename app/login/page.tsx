@@ -31,7 +31,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black overflow-hidden relative flex items-center justify-center">
+    <div className="min-h-screen bg-black overflow-hidden relative flex">
       {/* 背景アニメーション */}
       <div className="absolute inset-0 z-0">
         {/* パターン1: ノイズシルエット */}
@@ -50,38 +50,36 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* メインコンテンツ */}
-      <div className="relative z-10 w-full max-w-2xl px-8">
-        {/* ロゴ（鼓動エフェクト付き） */}
-        <div className={`text-center mb-12 transition-all duration-2000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      {/* 左側: ロゴエリア */}
+      <div className="relative z-10 w-1/2 flex items-center justify-center px-8">
+        <div className={`text-center transition-all duration-2000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="relative inline-block">
             <div className="logo-pulse">
               <Image
                 src="/BizBrain_logo.png"
                 alt="BizBrain"
-                width={160}
-                height={160}
-                className="mx-auto mb-6 logo-glow"
+                width={200}
+                height={200}
+                className="mx-auto mb-8 logo-glow"
                 priority
               />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               BizBrain
             </h1>
-            <p className="text-gray-400 text-sm font-light">
-              起動と共に、記憶が目覚める。
-            </p>
           </div>
         </div>
+      </div>
 
-        {/* ログインフォーム */}
-        <div className={`bg-black/40 backdrop-blur-lg border border-purple-500/20 rounded-2xl p-10 shadow-2xl transition-all duration-2000 delay-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      {/* 右側: ログインフォーム */}
+      <div className="relative z-10 w-1/2 flex items-center justify-center px-8">
+        <div className={`bg-black/40 backdrop-blur-lg border border-purple-500/20 rounded-2xl p-10 shadow-2xl transition-all duration-2000 delay-500 w-full max-w-md ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-semibold text-white mb-2">ログイン</h2>
             <p className="text-gray-400 text-sm">アカウントにアクセスしてください</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6 max-w-lg mx-auto">
+          <form onSubmit={handleLogin} className="space-y-6">
             {/* メールアドレス */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -149,7 +147,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
 
     </div>
   )
