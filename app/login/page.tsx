@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, User, Lock, Sparkles } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -31,117 +31,93 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black overflow-hidden relative flex">
-      {/* 背景アニメーション */}
-      <div className="absolute inset-0 z-0">
-        {/* パターン1: ノイズシルエット */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="brain-silhouette-grid"></div>
-        </div>
-        
-        {/* パターン2: データフローライン */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="data-flow-lines"></div>
-        </div>
-        
-        {/* パターン3: 点滅サーキット */}
-        <div className="absolute inset-0 opacity-8">
-          <div className="circuit-pattern"></div>
-        </div>
-      </div>
-
-      {/* 左側: ロゴエリア */}
-      <div className="relative z-10 w-1/2 flex items-center justify-center px-8">
-        <div className={`text-center transition-all duration-2000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="relative inline-block">
-            <div className="logo-pulse">
-              <Image
-                src="/BizBrain_logo.png"
-                alt="BizBrain"
-                width={200}
-                height={200}
-                className="mx-auto mb-8 logo-glow"
-                priority
-              />
-            </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              BizBrain
-            </h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
+      {/* メインコンテンツ */}
+      <div className={`w-full max-w-md transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {/* ロゴとタイトル */}
+        <div className="text-center mb-8">
+          <div className="mb-6">
+            <Image
+              src="/BizBrain_logo.png"
+              alt="BizBrain"
+              width={64}
+              height={64}
+              className="mx-auto opacity-90"
+              priority
+            />
           </div>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            BizBrain
+          </h1>
+          <p className="text-gray-400 text-sm">
+            アカウントにログインしてください
+          </p>
         </div>
-      </div>
 
-      {/* 右側: ログインフォーム */}
-      <div className="relative z-10 w-1/2 flex items-center justify-center px-8">
-        <div className={`bg-black/40 backdrop-blur-lg border border-purple-500/20 rounded-2xl p-10 shadow-2xl transition-all duration-2000 delay-500 w-full max-w-md ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-white mb-2">ログイン</h2>
-            <p className="text-gray-400 text-sm">アカウントにアクセスしてください</p>
-          </div>
-
+        {/* ログインフォーム */}
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 shadow-lg">
           <form onSubmit={handleLogin} className="space-y-6">
             {/* メールアドレス */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-400" />
-              </div>
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                メールアドレス
+              </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="メールアドレス"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 bg-gray-900/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                className="w-full bg-white/5 border-white/20 text-white placeholder-gray-400 focus:border-purple-400 focus:ring-purple-400/20 rounded-lg"
                 required
               />
             </div>
 
             {/* パスワード */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                パスワード
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-white/5 border-white/20 text-white placeholder-gray-400 focus:border-purple-400 focus:ring-purple-400/20 rounded-lg pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="パスワード"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10 bg-gray-900/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                required
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors duration-200"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
             </div>
 
             {/* ログインボタン */}
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed circuit-button"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  接続中...
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ログイン中...
                 </div>
               ) : (
-                <div className="flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  ログイン
-                </div>
+                "ログイン"
               )}
             </Button>
           </form>
 
           {/* その他のリンク */}
           <div className="mt-6 text-center">
-            <a href="#" className="text-sm text-gray-400 hover:text-purple-400 transition-colors duration-200">
+            <a href="#" className="text-sm text-gray-400 hover:text-purple-400 transition-colors">
               パスワードをお忘れですか？
             </a>
           </div>
