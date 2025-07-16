@@ -5,33 +5,33 @@
 
 
 :root {
-  --background: 220 20% 98%; /* 明るい背景 */
-  --foreground: 220 15% 20%; /* 暗いテキスト */
+  --background: 0 0% 98%; /* 純白に近い明るい背景 */
+  --foreground: 215 25% 27%; /* ダークグレーのテキスト */
 
-  --card: 220 20% 96%;
-  --card-foreground: 220 15% 20%;
+  --card: 0 0% 100%; /* 純白のカード */
+  --card-foreground: 215 25% 27%;
 
-  --popover: 220 20% 96%;
-  --popover-foreground: 220 15% 20%;
+  --popover: 0 0% 100%; /* 純白のポップオーバー */
+  --popover-foreground: 215 25% 27%;
 
-  --primary: 250 70% 60%; /* やや青寄りのパープル */
+  --primary: 220 100% 50%; /* 美しいブルー */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 10% 90%;
-  --secondary-foreground: 220 15% 30%;
+  --secondary: 220 14% 96%; /* 非常に淡いグレー */
+  --secondary-foreground: 215 25% 27%;
 
-  --muted: 220 10% 85%;
-  --muted-foreground: 220 10% 50%;
+  --muted: 220 14% 95%; /* 淡いグレー */
+  --muted-foreground: 215 16% 47%;
 
-  --accent: 240 60% 65%;
+  --accent: 220 100% 60%; /* アクセントブルー */
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 70% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 220 15% 88%;
-  --input: 220 15% 88%;
-  --ring: 250 70% 60%;
+  --border: 220 13% 91%; /* 非常に淡いボーダー */
+  --input: 220 13% 91%;
+  --ring: 220 100% 50%;
 
   --radius: 0.5rem;
 }
@@ -86,10 +86,10 @@
 
 @layer utilities {
   .bg-glass {
-    @apply bg-opacity-60 backdrop-blur-md border border-white/10;
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-lg;
   }
   .bg-glass-strong {
-    @apply bg-opacity-50 backdrop-blur-xl border border-white/5;
+    @apply bg-white/80 backdrop-blur-xl border border-white/30 shadow-xl;
   }
   .text-shadow-sm {
     text-shadow: 0 1px 2px var(--tw-shadow-color, rgba(0,0,0,0.1));
