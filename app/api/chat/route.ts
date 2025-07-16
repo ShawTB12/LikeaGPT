@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// OpenAIクライアントの初期化
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// OpenAIクライアントを遅延初期化する関数
+const getOpenAIClient = (): OpenAI => {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured')
+  }
+  
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+}
 
 // リクエストの型定義
 interface ChatRequest {
@@ -19,14 +25,6 @@ interface ChatResponse {
 
 export async function POST(request: NextRequest): Promise<NextResponse<ChatResponse>> {
   try {
-    // APIキーの存在確認
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OpenAI API key not configured')
-      return NextResponse.json(
-        { message: '', error: 'サーバー設定エラーが発生しました。' },
-        { status: 500 }
-      )
-    }
 
     // リクエストボディの解析
     const body: ChatRequest = await request.json()
@@ -63,6 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
     }
 
     // OpenAI APIの呼び出し（セキュリティ設定付き）
+    const openai = getOpenAIClient()
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // 最新の効率的なモデル
       messages: [
@@ -113,6 +112,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
     
     // エラーハンドリング
     if (error instanceof Error) {
+      // OpenAI APIキー設定エラー
+      if (error.message.includes('OpenAI API key not configured')) {
+        return NextResponse.json(
+          { message: '', error: 'サーバー設定エラーが発生しました。' },
+          { status: 500 }
+        )
+      }
+      
       // OpenAI API固有のエラーハンドリング
       if (error.message.includes('insufficient_quota')) {
         return NextResponse.json(
