@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button"
 
 // Message型を定義
 interface Message {
+  id?: string;
   text: string;
   sender: string;
   type?: 'text';
@@ -51,10 +52,11 @@ interface Chat {
   updatedAt: Date;
 }
 
-// API応答の型定義
-interface ChatResponse {
-  message: string;
+// ストリーミング応答の型定義
+interface StreamResponse {
+  content?: string;
   error?: string;
+  done: boolean;
 }
 
 export default function Home() {
@@ -66,6 +68,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null)
 
   // 現在のチャットを取得
   const currentChat = chats.find(chat => chat.id === currentChatId)
@@ -188,6 +191,7 @@ export default function Home() {
     }
     
     const userMessage: Message = { 
+      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       text: inputValue, 
       sender: "user", 
       type: "text",
@@ -200,7 +204,19 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      // OpenAI APIに送信
+      // AI応答用の空メッセージを最初に作成
+      const aiMessageId = `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const aiMessage: Message = {
+        id: aiMessageId,
+        text: "",
+        sender: "ai",
+        type: "text",
+        timestamp: new Date()
+      }
+      addMessageToChat(activeChat, aiMessage)
+      setTypingMessageId(aiMessageId)
+
+      // ストリーミングAPIに送信
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -209,25 +225,76 @@ export default function Home() {
         body: JSON.stringify({ message: query }),
       })
 
-      const data: ChatResponse = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'APIエラーが発生しました')
+        throw new Error('APIエラーが発生しました')
       }
 
-      if (data.error) {
-        throw new Error(data.error)
+      // ストリーミングレスポンスを処理
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let aiResponseText = ""
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                
+                if (data.error) {
+                  throw new Error(data.error)
+                }
+                
+                if (data.content) {
+                  aiResponseText += data.content
+                  
+                  // チャット内の最後のAIメッセージを更新（タイプライター効果）
+                  setChats(prev => prev.map(chat => {
+                    if (chat.id === activeChat) {
+                      const updatedMessages = [...chat.messages]
+                      const lastIndex = updatedMessages.length - 1
+                      
+                      if (lastIndex >= 0 && updatedMessages[lastIndex].sender === "ai") {
+                        updatedMessages[lastIndex] = {
+                          ...updatedMessages[lastIndex],
+                          text: aiResponseText
+                        }
+                      }
+                      
+                      return {
+                        ...chat,
+                        messages: updatedMessages,
+                        updatedAt: new Date()
+                      }
+                    }
+                    return chat
+                  }))
+                }
+                
+                if (data.done) {
+                  break
+                }
+              } catch (parseError) {
+                console.error('JSON parse error:', parseError)
+              }
+            }
+          }
+        }
       }
 
-      // AI応答を追加
-      const aiMessage: Message = {
-        text: data.message,
-        sender: "ai",
-        type: "text",
-        timestamp: new Date()
+      if (!aiResponseText) {
+        throw new Error('AIからの応答を取得できませんでした')
       }
-      
-      addMessageToChat(activeChat, aiMessage)
+
+      // タイピング効果終了
+      setTypingMessageId(null)
+
     } catch (err) {
       console.error('Chat error:', err)
       const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
@@ -235,6 +302,7 @@ export default function Home() {
       
       // エラーメッセージを表示
       const errorMsg: Message = {
+        id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         text: `エラー: ${errorMessage}`,
         sender: "system",
         type: "text",
@@ -243,6 +311,7 @@ export default function Home() {
       addMessageToChat(activeChat, errorMsg)
     } finally {
       setIsLoading(false)
+      setTypingMessageId(null)
     }
   }
 
@@ -403,7 +472,7 @@ export default function Home() {
           )}
           
           {messages.map((msg, index) => (
-            <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={msg.id || index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                 msg.sender === "user" 
                   ? "bg-primary text-primary-foreground" 
@@ -411,7 +480,12 @@ export default function Home() {
                   ? "bg-red-500/20 text-red-400 border border-red-500/30"
                   : "bg-secondary text-secondary-foreground"
               }`}>
-                <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {msg.text}
+                  {msg.id && typingMessageId === msg.id && (
+                    <span className="inline-block w-2 h-4 bg-current ml-1 animate-pulse">|</span>
+                  )}
+                </p>
                 {msg.timestamp && (
                   <p className="text-xs opacity-60 mt-1">
                     {msg.timestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}

@@ -21,15 +21,8 @@ interface ChatRequest {
   message: string
 }
 
-// APIレスポンスの型定義
-interface ChatResponse {
-  message: string
-  error?: string
-}
-
-export async function POST(request: NextRequest): Promise<NextResponse<ChatResponse>> {
+export async function POST(request: NextRequest) {
   try {
-
     // リクエストボディの解析
     const body: ChatRequest = await request.json()
     
@@ -64,10 +57,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
       )
     }
 
-    // OpenAI APIの呼び出し（セキュリティ設定付き）
+    // OpenAI APIの呼び出し（ストリーミング対応）
     const openai = getOpenAIClient()
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // 最新の効率的なモデル
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -87,28 +80,47 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
       ],
       max_tokens: 1000,
       temperature: 0.7,
-      // 重要: データ学習防止のための設定
-      // OpenAI APIではデフォルトでAPIデータは学習に使用されませんが、
-      // 明示的にuser IDを設定しないことで匿名性を保持
-    }, {
-      // リクエストヘッダーにデータ使用ポリシーを明示
-      headers: {
-        'OpenAI-Beta': 'assistants=v1',
+      stream: true // ストリーミングを有効化
+    })
+
+    // ストリーミングレスポンスを作成
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of completion) {
+            const content = chunk.choices[0]?.delta?.content || ''
+            if (content) {
+              // タイプライター効果のために各文字をJSONで送信
+              const data = JSON.stringify({ content, done: false })
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+            }
+          }
+          // ストリーム終了の合図
+          const endData = JSON.stringify({ content: '', done: true })
+          controller.enqueue(encoder.encode(`data: ${endData}\n\n`))
+          controller.close()
+        } catch (error) {
+          console.error('Streaming error:', error)
+          const errorData = JSON.stringify({ 
+            error: 'ストリーミング中にエラーが発生しました。',
+            done: true 
+          })
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+          controller.close()
+        }
       }
     })
 
-    const aiMessage = completion.choices[0]?.message?.content
-
-    if (!aiMessage) {
-      return NextResponse.json(
-        { message: '', error: 'AIからの応答を取得できませんでした。' },
-        { status: 500 }
-      )
-    }
-
-    // 成功レスポンス
-    return NextResponse.json({
-      message: aiMessage
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
     })
 
   } catch (error) {
