@@ -483,7 +483,7 @@ export default function Home() {
                 <p className="text-sm whitespace-pre-wrap">
                   {msg.text}
                   {msg.id && typingMessageId === msg.id && (
-                    <span className="inline-block w-2 h-4 bg-current ml-1 animate-pulse">|</span>
+                    <span className="inline-block w-0.5 h-4 bg-current ml-1 animate-blink">|</span>
                   )}
                 </p>
                 {msg.timestamp && (
