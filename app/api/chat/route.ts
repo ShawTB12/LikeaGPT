@@ -3,6 +3,10 @@ import OpenAI from 'openai'
 
 // OpenAIクライアントを遅延初期化する関数
 const getOpenAIClient = (): OpenAI => {
+  // デバッグ用ログ（実際のキーは表示しない）
+  console.log('OpenAI API Key exists:', !!process.env.OPENAI_API_KEY)
+  console.log('OpenAI API Key length:', process.env.OPENAI_API_KEY?.length || 0)
+  
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured')
   }

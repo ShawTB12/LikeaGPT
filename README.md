@@ -52,11 +52,21 @@ npm install --legacy-peer-deps
 ```
 
 3. **環境変数の設定**
+
+**ローカル開発用:**
 ```bash
 # .env.local ファイルを作成
 OPENAI_API_KEY=sk-your-openai-api-key-here
-NEXT_PUBLIC_APP_ENV=production
 ```
+
+**Vercelデプロイ用:**
+1. [Vercel Dashboard](https://vercel.com/dashboard) にアクセス
+2. プロジェクトを選択 → **Settings** → **Environment Variables**
+3. 以下を追加：
+   - **Name**: `OPENAI_API_KEY`
+   - **Value**: あなたのOpenAI APIキー
+   - **Environments**: Production, Preview, Development すべて選択
+4. **Save** をクリックして再デプロイ
 
 4. **開発サーバーの起動**
 ```bash
